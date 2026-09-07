@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kabadiwala_connect/features/collector/new_scrap_lot_screen.dart';
 
+import '../../features/collector/nearby_recyclers_screen.dart';
 import '../../features/onboarding/city_selection_screen.dart';
 import '../../features/onboarding/mobile_screen.dart';
 import '../../features/onboarding/otp_screen.dart';
@@ -56,6 +57,19 @@ class AppRouter {
         );
       case '/new-lot':
         return MaterialPageRoute(builder: (_) => const NewScrapLotScreen());
+      case '/recyclers':
+        return MaterialPageRoute(settings: settings,builder: (_) => const NearbyRecyclersScreen());
+      case '/offer-accepted':
+        return MaterialPageRoute(
+          builder: (_) => const Scaffold(
+            body: Center(
+              child: Text(
+                'ऑफर स्वीकार किया गया',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        );
 
       default:
         return MaterialPageRoute(builder: (_) => const MobileScreen());

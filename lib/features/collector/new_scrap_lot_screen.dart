@@ -3,6 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../models/lot_item.dart';
+import '../../services/classification_service.dart';
+import '../../services/material_catalog_service.dart';
+
 class NewScrapLotScreen extends StatefulWidget {
   const NewScrapLotScreen({super.key});
 
@@ -12,119 +16,186 @@ class NewScrapLotScreen extends StatefulWidget {
 
 class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
   final ImagePicker _picker = ImagePicker();
+  final ClassificationService _classificationService =
+      MockClassificationService();
+  final MaterialCatalogService _catalogService =
+      LocalMaterialCatalogService();
+
+  final List<LotItem> _items = [];
 
   File? _image;
-  String _selectedMaterial = 'पीसीबी';
-  double _weight = 4;
+  ClassificationResult? _classification;
+  MaterialInfo? _materialInfo;
 
-  final Map<String, double> _rates = {
-    'पीसीबी': 210,
-    'बैटरी': 85,
-    'केबल': 140,
-  };
+  bool _isAnalyzing = false;
 
-  double get _rate => _rates[_selectedMaterial] ?? 0;
-  double get _estimatedPrice => _rate * _weight;
+  late TextEditingController _quantityController;
 
-  Future<void> _pickImage(ImageSource source) async {
+  String _quality = 'अच्छा';
+
+  @override
+  void initState() {
+    super.initState();
+    _quantityController = TextEditingController(text: '100');
+  }
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _takePhoto() async {
+    final XFile? photo = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+
+    if (photo == null) return;
+
+    setState(() {
+      _image = File(photo.path);
+      _classification = null;
+      _materialInfo = null;
+      _isAnalyzing = true;
+    });
+
     try {
-      final XFile? picked = await _picker.pickImage(
-        source: source,
-        imageQuality: 80,
+      final result = await _classificationService.classify(
+        File(photo.path),
       );
 
-      if (picked == null) return;
+      final materialInfo = _catalogService.getMaterial(result.material);
 
       setState(() {
-        _image = File(picked.path);
+        _classification = result;
+        _materialInfo = materialInfo;
+        _isAnalyzing = false;
+
+        // Set a sensible default quantity based on unit.
+        _quantityController.text =
+            materialInfo.unit == 'ग्राम' ? '100' : '1';
       });
     } catch (e) {
+      setState(() {
+        _isAnalyzing = false;
+      });
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('फोटो लेने में समस्या हुई'),
+          content: Text('सामग्री पहचानने में समस्या हुई'),
         ),
       );
     }
   }
 
-  void _showImageOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(20),
+  void _changeQuantity(double change) {
+    final current =
+        double.tryParse(_quantityController.text.trim()) ?? 0;
+
+    final newValue = current + change;
+
+    if (newValue <= 0) return;
+
+    setState(() {
+      _quantityController.text = _formatQuantity(newValue);
+    });
+  }
+
+  String _formatQuantity(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+
+    return value.toStringAsFixed(1);
+  }
+
+  void _addToLot() {
+    if (_classification == null || _materialInfo == null) return;
+
+    final quantity =
+        double.tryParse(_quantityController.text.trim());
+
+    if (quantity == null || quantity <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('कृपया सही मात्रा दर्ज करें'),
         ),
+      );
+      return;
+    }
+
+    final item = LotItem(
+      material: _materialInfo!.name,
+      unit: _materialInfo!.unit,
+      quantity: quantity,
+      quality: _quality,
+      rate: _materialInfo!.rate,
+      imagePath: _image?.path,
+      confidence: _classification!.confidence,
+    );
+
+    setState(() {
+      _items.add(item);
+
+      // Reset current scan so another item can be added.
+      _image = null;
+      _classification = null;
+      _materialInfo = null;
+      _quantityController.text = '100';
+      _quality = 'अच्छा';
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('सामग्री लॉट में जोड़ दी गई'),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'फोटो जोड़ें',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt_outlined),
-                  title: const Text('कैमरा'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickImage(ImageSource.camera);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.photo_library_outlined),
-                  title: const Text('गैलरी'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickImage(ImageSource.gallery);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
+    );
+  }
+
+  double get _totalPrice {
+    return _items.fold(
+      0,
+      (sum, item) => sum + item.estimatedPrice,
+    );
+  }
+
+  double get _totalWeightGrams {
+    return _items.fold(
+      0,
+      (sum, item) {
+        if (item.unit == 'किलो') {
+          return sum + (item.quantity * 1000);
+        }
+
+        if (item.unit == 'ग्राम') {
+          return sum + item.quantity;
+        }
+
+        return sum;
       },
     );
   }
 
-  void _changeWeight(double amount) {
-    setState(() {
-      _weight += amount;
+  void _proceed() {
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('पहले कम से कम एक सामग्री लॉट में जोड़ें'),
+        ),
+      );
+      return;
+    }
 
-      if (_weight < 1) {
-        _weight = 1;
-      }
-
-      if (_weight > 50) {
-        _weight = 50;
-      }
-    });
-  }
-
-  void _setWeight(double weight) {
-    setState(() {
-      _weight = weight;
-    });
-  }
-
-  void _continue() {
     Navigator.pushNamed(
       context,
       '/recyclers',
       arguments: {
-        'material': _selectedMaterial,
-        'weight': _weight,
-        'price': _estimatedPrice,
-        'image': _image,
+        'items': _items,
+        'totalPrice': _totalPrice,
+        'totalWeightGrams': _totalWeightGrams,
       },
     );
   }
@@ -133,404 +204,483 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'नया लॉट',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: false,
+        title: const Text('नया लॉट'),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'फोटो लें और सामग्री चुनें',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  height: 1.15,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              const Text(
-                'सही जानकारी से आपको उचित भाव मिलेगा',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.black54,
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              // PHOTO
-              GestureDetector(
-                onTap: _showImageOptions,
-                child: Container(
-                  height: 210,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F7F3),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: const Color(0xFFD4DDD6),
-                    ),
-                  ),
-                  child: _image == null
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt_outlined,
-                                size: 34,
-                                color: Color(0xFF176B45),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'फोटो लेने के लिए टैप करें',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'कैमरा या गैलरी से फोटो चुनें',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(17),
-                          child: Image.file(
-                            _image!,
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // MATERIAL
-              const Text(
-                'सामग्री',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  _MaterialChip(
-                    label: 'पीसीबी',
-                    icon: Icons.memory_outlined,
-                    selected: _selectedMaterial == 'पीसीबी',
-                    onTap: () {
-                      setState(() {
-                        _selectedMaterial = 'पीसीबी';
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  _MaterialChip(
-                    label: 'बैटरी',
-                    icon: Icons.battery_full_outlined,
-                    selected: _selectedMaterial == 'बैटरी',
-                    onTap: () {
-                      setState(() {
-                        _selectedMaterial = 'बैटरी';
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  _MaterialChip(
-                    label: 'केबल',
-                    icon: Icons.cable_outlined,
-                    selected: _selectedMaterial == 'केबल',
-                    onTap: () {
-                      setState(() {
-                        _selectedMaterial = 'केबल';
-                      });
-                    },
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 26),
-
-              // WEIGHT
-              const Text(
-                'वज़न',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              Row(
-                children: [
-                  _WeightButton(
-                    icon: Icons.remove,
-                    onTap: () => _changeWeight(-1),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        '${_weight.toStringAsFixed(0)} किलो',
-                        style: const TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _WeightButton(
-                    icon: Icons.add,
-                    onTap: () => _changeWeight(1),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  _QuickWeight(
-                    label: '1 किलो',
-                    onTap: () => _setWeight(1),
-                  ),
-                  const SizedBox(width: 8),
-                  _QuickWeight(
-                    label: '4 किलो',
-                    onTap: () => _setWeight(4),
-                  ),
-                  const SizedBox(width: 8),
-                  _QuickWeight(
-                    label: '8 किलो',
-                    onTap: () => _setWeight(8),
-                  ),
-                  const SizedBox(width: 8),
-                  _QuickWeight(
-                    label: '10+ किलो',
-                    onTap: () => _setWeight(10),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 26),
-
-              // PRICE
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF5EF),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'अनुमानित कीमत',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    const Text(
+                      'फोटो लें और सामग्री चुनें',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const SizedBox(height: 8),
                     Text(
-                      '₹${_estimatedPrice.toStringAsFixed(0)}',
+                      'सामग्री की फोटो लेकर AI से पहचान करवाएँ',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    _buildPhotoSection(),
+
+                    if (_isAnalyzing) ...[
+                      const SizedBox(height: 20),
+                      _buildAnalyzingCard(),
+                    ],
+
+                    if (_classification != null &&
+                        _materialInfo != null) ...[
+                      const SizedBox(height: 20),
+                      _buildClassificationResult(),
+                    ],
+
+                    if (_items.isNotEmpty) ...[
+                      const SizedBox(height: 28),
+                      _buildLotItems(),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
+            _buildBottomBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoSection() {
+    if (_image == null) {
+      return Container(
+        width: double.infinity,
+        height: 230,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: Colors.grey.shade300,
+          ),
+          color: Colors.grey.shade50,
+        ),
+        child: Center(
+          child: ElevatedButton.icon(
+            onPressed: _takePhoto,
+            icon: const Icon(Icons.camera_alt_outlined),
+            label: const Text('फोटो लें'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 28,
+                vertical: 16,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Image.file(
+        _image!,
+        width: double.infinity,
+        height: 260,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  Widget _buildAnalyzingCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF5EF),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+            ),
+          ),
+          SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              'AI सामग्री की पहचान कर रहा है...',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClassificationResult() {
+    final material = _materialInfo!;
+    final confidence =
+        (_classification!.confidence * 100).round();
+
+    final quantity =
+        double.tryParse(_quantityController.text) ?? 0;
+
+    final estimatedPrice = quantity * material.rate;
+
+    final quantityStep = material.unit == 'ग्राम' ? 10.0 : 1.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEAF5EF),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFB9DCC9),
+            ),
+          ),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 25,
+                child: Icon(Icons.check),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'AI ने पहचान लिया',
+                      style: TextStyle(
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      material.name,
                       style: const TextStyle(
-                        fontSize: 27,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF176B45),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'विश्वास: $confidence%',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
                       ),
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+        ),
 
-              const SizedBox(height: 8),
+        const SizedBox(height: 20),
 
-              Text(
-                'दर: ₹${_rate.toStringAsFixed(0)}/किलो',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Colors.black54,
+        const Text(
+          'मात्रा',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        Row(
+          children: [
+            _quantityButton(
+              icon: Icons.remove,
+              onPressed: () => _changeQuantity(-quantityStep),
+            ),
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: TextField(
+                controller: _quantityController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
                 ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // CTA
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _continue,
-                  child: const Text(
-                    'आगे बढ़ें',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                    ),
+                textAlign: TextAlign.center,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  suffixText: material.unit,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
-            ],
+            ),
+
+            const SizedBox(width: 10),
+
+            _quantityButton(
+              icon: Icons.add,
+              onPressed: () => _changeQuantity(quantityStep),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 14),
+
+        Wrap(
+          spacing: 8,
+          children: [
+            _quickQuantity('1', material.unit),
+            _quickQuantity(
+              material.unit == 'ग्राम' ? '100' : '4',
+              material.unit,
+            ),
+            _quickQuantity(
+              material.unit == 'ग्राम' ? '500' : '8',
+              material.unit,
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        const Text(
+          'गुणवत्ता',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
           ),
         ),
-      ),
-    );
-  }
-}
 
-class _MaterialChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
+        const SizedBox(height: 8),
 
-  const _MaterialChip({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(
-            vertical: 13,
-            horizontal: 6,
-          ),
-          decoration: BoxDecoration(
-            color: selected
-                ? const Color(0xFFE4F2EA)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected
-                  ? const Color(0xFF176B45)
-                  : const Color(0xFFD9DED9),
-              width: selected ? 1.5 : 1,
+        DropdownButtonFormField<String>(
+          initialValue: _quality,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: Column(
+          items: const [
+            DropdownMenuItem(
+              value: 'नया जैसा',
+              child: Text('नया जैसा'),
+            ),
+            DropdownMenuItem(
+              value: 'बहुत अच्छा',
+              child: Text('बहुत अच्छा'),
+            ),
+            DropdownMenuItem(
+              value: 'अच्छा',
+              child: Text('अच्छा'),
+            ),
+            DropdownMenuItem(
+              value: 'खराब',
+              child: Text('खराब'),
+            ),
+            DropdownMenuItem(
+              value: 'पता नहीं',
+              child: Text('पता नहीं'),
+            ),
+          ],
+          onChanged: (value) {
+            if (value == null) return;
+
+            setState(() {
+              _quality = value;
+            });
+          },
+        ),
+
+        const SizedBox(height: 20),
+
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.grey.shade300,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                icon,
-                color: selected
-                    ? const Color(0xFF176B45)
-                    : Colors.black54,
-              ),
-              const SizedBox(height: 5),
-              Text(
-                label,
+              const Text(
+                'अनुमानित कीमत',
                 style: TextStyle(
-                  fontWeight: selected
-                      ? FontWeight.w800
-                      : FontWeight.w600,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '₹${estimatedPrice.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
 
-class _WeightButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
+        const SizedBox(height: 16),
 
-  const _WeightButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: const Color(0xFFD9DED9),
-            ),
-          ),
-          child: Icon(icon),
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickWeight extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _QuickWeight({
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _addToLot,
+            child: const Text('लॉट में जोड़ें'),
           ),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
+      ],
+    );
+  }
+
+  Widget _quantityButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton.filled(
+      onPressed: onPressed,
+      icon: Icon(icon),
+    );
+  }
+
+  Widget _quickQuantity(String value, String unit) {
+    return ActionChip(
+      label: Text('$value $unit'),
+      onPressed: () {
+        setState(() {
+          _quantityController.text = value;
+        });
+      },
+    );
+  }
+
+  Widget _buildLotItems() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'आपका लॉट',
+          style: TextStyle(
+            fontSize: 20,
             fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        ..._items.asMap().entries.map(
+          (entry) {
+            final index = entry.key;
+            final item = entry.value;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.grey.shade300,
+                ),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    child: Text('${index + 1}'),
+                  ),
+                  const SizedBox(width: 14),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.material,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_formatQuantity(item.quantity)} ${item.unit} · ${item.quality}',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Text(
+                    '₹${item.estimatedPrice.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+
+        const SizedBox(height: 8),
+
+        OutlinedButton.icon(
+          onPressed: _takePhoto,
+          icon: const Icon(Icons.add_a_photo_outlined),
+          label: const Text('एक और सामग्री स्कैन करें'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 52),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 10,
+            color: Colors.black.withOpacity(0.08),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _items.isEmpty ? null : _proceed,
+          child: Text(
+            _items.isEmpty
+                ? 'आगे बढ़ें'
+                : 'आगे बढ़ें · ₹${_totalPrice.toStringAsFixed(0)}',
           ),
         ),
       ),
