@@ -3,84 +3,77 @@ import 'package:flutter/material.dart';
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
 
+  void _selectRole(BuildContext context, String role) {
+    Navigator.pushNamed(
+      context,
+      '/state',
+      arguments: role,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 31),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Spacer(flex: 2),
+              const SizedBox(height: 58),
 
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Icon(
-                  Icons.recycling_rounded,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.primary,
+              const Text(
+                'आप कौन हैं?',
+                style: TextStyle(
+                  fontSize: 38,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF191919),
+                  height: 1.1,
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 12),
 
-              Text(
-                'Kabadiwala Connect',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-              ),
-
-              const SizedBox(height: 10),
-
-              Text(
-                'Scrap. Fair Price. Safe Recycling.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.black54,
-                    ),
+              const Text(
+                'अपना रोल चुनें',
+                style: TextStyle(
+                  fontSize: 19,
+                  color: Color(0xFF666666),
+                ),
               ),
 
               const Spacer(),
 
               _RoleCard(
-                icon: Icons.person_rounded,
-                title: 'Collector',
-                subtitle: 'Create lots, check fair prices & find recyclers',
-                onTap: () {
-                  // Collector home will be connected next.
-                },
+                icon: Icons.recycling,
+                title: 'मैं कलेक्टर हूँ',
+                subtitle: 'कबाड़ इकट्ठा करता हूँ',
+                onTap: () => _selectRole(context, 'collector'),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               _RoleCard(
-                icon: Icons.factory_rounded,
-                title: 'Recycler',
-                subtitle: 'Manage incoming lots & verify handovers',
-                onTap: () {
-                  // Recycler dashboard will be connected next.
-                },
+                icon: Icons.factory_outlined,
+                title: 'मैं रीसाइक्लर हूँ',
+                subtitle: 'कबाड़ खरीदता हूँ',
+                onTap: () => _selectRole(context, 'recycler'),
               ),
 
               const Spacer(),
 
-              Text(
-                'A digital bridge between informal collectors and authorized recyclers',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.black45,
-                    ),
+              const Center(
+                child: Text(
+                  'आप बाद में अपना रोल बदल सकते हैं',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF888888),
+                  ),
+                ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 60),
             ],
           ),
         ),
@@ -104,33 +97,42 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 25,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF6FBF8),
+            border: Border.all(
+              color: const Color(0xFFD6E7DF),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Row(
             children: [
               Container(
-                width: 58,
-                height: 58,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(18),
+                  color: const Color(0xFFE0F1E9),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   icon,
-                  color: colorScheme.primary,
-                  size: 30,
+                  size: 34,
+                  color: const Color(0xFF147A65),
                 ),
               ),
 
-              const SizedBox(width: 16),
+              const SizedBox(width: 20),
 
               Expanded(
                 child: Column(
@@ -138,16 +140,19 @@ class _RoleCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF191919),
+                      ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 7),
                     Text(
                       subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.black54,
-                          ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF666666),
+                      ),
                     ),
                   ],
                 ),
@@ -155,8 +160,8 @@ class _RoleCard extends StatelessWidget {
 
               const Icon(
                 Icons.arrow_forward_ios_rounded,
-                size: 18,
-                color: Colors.black38,
+                size: 19,
+                color: Color(0xFF147A65),
               ),
             ],
           ),
