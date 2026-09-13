@@ -18,8 +18,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
   final ImagePicker _picker = ImagePicker();
   final ClassificationService _classificationService =
       MockClassificationService();
-  final MaterialCatalogService _catalogService =
-      LocalMaterialCatalogService();
+  final MaterialCatalogService _catalogService = LocalMaterialCatalogService();
 
   final List<LotItem> _items = [];
 
@@ -61,9 +60,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
     });
 
     try {
-      final result = await _classificationService.classify(
-        File(photo.path),
-      );
+      final result = await _classificationService.classify(File(photo.path));
 
       final materialInfo = _catalogService.getMaterial(result.material);
 
@@ -73,8 +70,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
         _isAnalyzing = false;
 
         // Set a sensible default quantity based on unit.
-        _quantityController.text =
-            materialInfo.unit == 'ग्राम' ? '100' : '1';
+        _quantityController.text = materialInfo.unit == 'ग्राम' ? '100' : '1';
       });
     } catch (e) {
       setState(() {
@@ -84,16 +80,13 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('सामग्री पहचानने में समस्या हुई'),
-        ),
+        const SnackBar(content: Text('सामग्री पहचानने में समस्या हुई')),
       );
     }
   }
 
   void _changeQuantity(double change) {
-    final current =
-        double.tryParse(_quantityController.text.trim()) ?? 0;
+    final current = double.tryParse(_quantityController.text.trim()) ?? 0;
 
     final newValue = current + change;
 
@@ -115,14 +108,11 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
   void _addToLot() {
     if (_classification == null || _materialInfo == null) return;
 
-    final quantity =
-        double.tryParse(_quantityController.text.trim());
+    final quantity = double.tryParse(_quantityController.text.trim());
 
     if (quantity == null || quantity <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('कृपया सही मात्रा दर्ज करें'),
-        ),
+        const SnackBar(content: Text('कृपया सही मात्रा दर्ज करें')),
       );
       return;
     }
@@ -148,35 +138,27 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
       _quality = 'अच्छा';
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('सामग्री लॉट में जोड़ दी गई'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('सामग्री लॉट में जोड़ दी गई')));
   }
 
   double get _totalPrice {
-    return _items.fold(
-      0,
-      (sum, item) => sum + item.estimatedPrice,
-    );
+    return _items.fold(0, (sum, item) => sum + item.estimatedPrice);
   }
 
   double get _totalWeightGrams {
-    return _items.fold(
-      0,
-      (sum, item) {
-        if (item.unit == 'किलो') {
-          return sum + (item.quantity * 1000);
-        }
+    return _items.fold(0, (sum, item) {
+      if (item.unit == 'किलो') {
+        return sum + (item.quantity * 1000);
+      }
 
-        if (item.unit == 'ग्राम') {
-          return sum + item.quantity;
-        }
+      if (item.unit == 'ग्राम') {
+        return sum + item.quantity;
+      }
 
-        return sum;
-      },
-    );
+      return sum;
+    });
   }
 
   void _proceed() {
@@ -203,9 +185,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('नया लॉट'),
-      ),
+      appBar: AppBar(title: const Text('नया लॉट')),
       body: SafeArea(
         child: Column(
           children: [
@@ -239,8 +219,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
                       _buildAnalyzingCard(),
                     ],
 
-                    if (_classification != null &&
-                        _materialInfo != null) ...[
+                    if (_classification != null && _materialInfo != null) ...[
                       const SizedBox(height: 20),
                       _buildClassificationResult(),
                     ],
@@ -268,9 +247,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
         height: 230,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: Colors.grey.shade300,
-          ),
+          border: Border.all(color: Colors.grey.shade300),
           color: Colors.grey.shade50,
         ),
         child: Center(
@@ -279,10 +256,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
             icon: const Icon(Icons.camera_alt_outlined),
             label: const Text('फोटो लें'),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 28,
-                vertical: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
             ),
           ),
         ),
@@ -313,18 +287,13 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
           SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2.5),
           ),
           SizedBox(width: 14),
           Expanded(
             child: Text(
               'AI सामग्री की पहचान कर रहा है...',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -334,11 +303,9 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
 
   Widget _buildClassificationResult() {
     final material = _materialInfo!;
-    final confidence =
-        (_classification!.confidence * 100).round();
+    final confidence = (_classification!.confidence * 100).round();
 
-    final quantity =
-        double.tryParse(_quantityController.text) ?? 0;
+    final quantity = double.tryParse(_quantityController.text) ?? 0;
 
     final estimatedPrice = quantity * material.rate;
 
@@ -353,16 +320,11 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFFEAF5EF),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFB9DCC9),
-            ),
+            border: Border.all(color: const Color(0xFFB9DCC9)),
           ),
           child: Row(
             children: [
-              const CircleAvatar(
-                radius: 25,
-                child: Icon(Icons.check),
-              ),
+              const CircleAvatar(radius: 25, child: Icon(Icons.check)),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -370,9 +332,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
                   children: [
                     const Text(
                       'AI ने पहचान लिया',
-                      style: TextStyle(
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(fontSize: 13),
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -385,9 +345,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
                     const SizedBox(height: 3),
                     Text(
                       'विश्वास: $confidence%',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                      ),
+                      style: TextStyle(color: Colors.grey.shade700),
                     ),
                   ],
                 ),
@@ -400,10 +358,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
 
         const Text(
           'मात्रा',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
 
         const SizedBox(height: 8),
@@ -463,10 +418,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
 
         const Text(
           'गुणवत्ता',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
 
         const SizedBox(height: 8),
@@ -474,31 +426,14 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
         DropdownButtonFormField<String>(
           initialValue: _quality,
           decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           items: const [
-            DropdownMenuItem(
-              value: 'नया जैसा',
-              child: Text('नया जैसा'),
-            ),
-            DropdownMenuItem(
-              value: 'बहुत अच्छा',
-              child: Text('बहुत अच्छा'),
-            ),
-            DropdownMenuItem(
-              value: 'अच्छा',
-              child: Text('अच्छा'),
-            ),
-            DropdownMenuItem(
-              value: 'खराब',
-              child: Text('खराब'),
-            ),
-            DropdownMenuItem(
-              value: 'पता नहीं',
-              child: Text('पता नहीं'),
-            ),
+            DropdownMenuItem(value: 'नया जैसा', child: Text('नया जैसा')),
+            DropdownMenuItem(value: 'बहुत अच्छा', child: Text('बहुत अच्छा')),
+            DropdownMenuItem(value: 'अच्छा', child: Text('अच्छा')),
+            DropdownMenuItem(value: 'खराब', child: Text('खराब')),
+            DropdownMenuItem(value: 'पता नहीं', child: Text('पता नहीं')),
           ],
           onChanged: (value) {
             if (value == null) return;
@@ -517,19 +452,14 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.grey.shade300,
-            ),
+            border: Border.all(color: Colors.grey.shade300),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'अनुमानित कीमत',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               Text(
                 '₹${estimatedPrice.toStringAsFixed(0)}',
@@ -559,10 +489,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
     required IconData icon,
     required VoidCallback onPressed,
   }) {
-    return IconButton.filled(
-      onPressed: onPressed,
-      icon: Icon(icon),
-    );
+    return IconButton.filled(onPressed: onPressed, icon: Icon(icon));
   }
 
   Widget _quickQuantity(String value, String unit) {
@@ -582,70 +509,58 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
       children: [
         const Text(
           'आपका लॉट',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 12),
 
-        ..._items.asMap().entries.map(
-          (entry) {
-            final index = entry.key;
-            final item = entry.value;
+        ..._items.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.grey.shade300,
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(child: Text('${index + 1}')),
+                const SizedBox(width: 14),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.material,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_formatQuantity(item.quantity)} ${item.unit} · ${item.quality}',
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    child: Text('${index + 1}'),
-                  ),
-                  const SizedBox(width: 14),
 
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.material,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_formatQuantity(item.quantity)} ${item.unit} · ${item.quality}',
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
+                Text(
+                  '₹${item.estimatedPrice.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
                   ),
-
-                  Text(
-                    '₹${item.estimatedPrice.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+                ),
+              ],
+            ),
+          );
+        }),
 
         const SizedBox(height: 8),
 
@@ -667,10 +582,7 @@ class _NewScrapLotScreenState extends State<NewScrapLotScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(
-            blurRadius: 10,
-            color: Colors.black.withOpacity(0.08),
-          ),
+          BoxShadow(blurRadius: 10, color: Colors.black.withOpacity(0.08)),
         ],
       ),
       child: SizedBox(

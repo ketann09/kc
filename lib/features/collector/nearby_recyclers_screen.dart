@@ -8,34 +8,24 @@ class NearbyRecyclersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments;
-    
 
     final Map data = args is Map ? args : {};
 
-    final List<LotItem> items =
-        (data['items'] as List?)?.cast<LotItem>() ?? [];
+    final List<LotItem> items = (data['items'] as List?)?.cast<LotItem>() ?? [];
 
-    final double totalPrice =
-        (data['totalPrice'] as num?)?.toDouble() ?? 0;
+    final double totalPrice = (data['totalPrice'] as num?)?.toDouble() ?? 0;
 
     final double totalWeightGrams =
         (data['totalWeightGrams'] as num?)?.toDouble() ?? 0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('पास के रीसाइक्लर'),
-      ),
+      appBar: AppBar(title: const Text('पास के रीसाइक्लर')),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  20,
-                  12,
-                  20,
-                  100,
-                ),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -59,11 +49,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    _buildLotSummary(
-                      items,
-                      totalPrice,
-                      totalWeightGrams,
-                    ),
+                    _buildLotSummary(items, totalPrice, totalWeightGrams),
 
                     const SizedBox(height: 24),
 
@@ -81,10 +67,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
                       context: context,
                       name: 'ग्रीन रीसायकल',
                       distance: '1.2 किमी दूर',
-                      price: _offerPrice(
-                        totalPrice,
-                        1.02,
-                      ),
+                      price: _offerPrice(totalPrice, 1.02),
                       subtitle: 'अधिकृत सुविधा · पिकअप',
                       authorized: true,
                       pickup: true,
@@ -97,10 +80,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
                       context: context,
                       name: 'सिटी ई-वेस्ट',
                       distance: '3.4 किमी दूर',
-                      price: _offerPrice(
-                        totalPrice,
-                        0.95,
-                      ),
+                      price: _offerPrice(totalPrice, 0.95),
                       subtitle: 'अधिकृत सुविधा · ड्रॉप-ऑफ',
                       authorized: true,
                       pickup: false,
@@ -131,10 +111,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
     );
   }
 
-  String _subtitle(
-    List<LotItem> items,
-    double totalWeightGrams,
-  ) {
+  String _subtitle(List<LotItem> items, double totalWeightGrams) {
     if (items.isEmpty) {
       return 'आपके लॉट के लिए विकल्प';
     }
@@ -159,23 +136,17 @@ class NearbyRecyclersScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFEAF5EF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFB9DCC9),
-        ),
+        border: Border.all(color: const Color(0xFFB9DCC9)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment:
-                MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'आपका लॉट',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               Text(
                 '₹${totalPrice.toStringAsFixed(0)}',
@@ -194,10 +165,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 7),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.check_circle_outline,
-                    size: 18,
-                  ),
+                  const Icon(Icons.check_circle_outline, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -206,9 +174,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
                   ),
                   Text(
                     '₹${item.estimatedPrice.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -219,9 +185,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               'कुल वजन: ${_formatWeight(totalWeightGrams)}',
-              style: TextStyle(
-                color: Colors.grey.shade700,
-              ),
+              style: TextStyle(color: Colors.grey.shade700),
             ),
           ],
         ],
@@ -245,16 +209,13 @@ class NearbyRecyclersScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 48,
@@ -277,8 +238,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
 
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       name,
@@ -323,10 +283,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     'अधिकृत',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                   ),
                 ),
             ],
@@ -336,14 +293,11 @@ class NearbyRecyclersScreen extends StatelessWidget {
 
           if (price != null)
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
                   'अनुमानित ऑफर',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 Text(
                   '₹${price.toStringAsFixed(0)}',
@@ -358,9 +312,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
           if (price == null)
             Text(
               'कीमत की पुष्टि रीसाइक्लर से करें',
-              style: TextStyle(
-                color: Colors.grey.shade700,
-              ),
+              style: TextStyle(color: Colors.grey.shade700),
             ),
 
           const SizedBox(height: 14),
@@ -380,11 +332,7 @@ class NearbyRecyclersScreen extends StatelessWidget {
                   },
                 );
               },
-              child: Text(
-                pickup
-                    ? 'पिकअप चुनें'
-                    : 'ड्रॉप-ऑफ चुनें',
-              ),
+              child: Text(pickup ? 'पिकअप चुनें' : 'ड्रॉप-ऑफ चुनें'),
             ),
           ),
         ],
@@ -394,19 +342,11 @@ class NearbyRecyclersScreen extends StatelessWidget {
 
   Widget _buildBottomBar(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        12,
-        20,
-        16,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(
-            blurRadius: 10,
-            color: Colors.black.withOpacity(0.08),
-          ),
+          BoxShadow(blurRadius: 10, color: Colors.black.withOpacity(0.08)),
         ],
       ),
       child: const SafeArea(
@@ -414,19 +354,13 @@ class NearbyRecyclersScreen extends StatelessWidget {
         child: Text(
           'अधिकृत रीसाइक्लर को प्राथमिकता दें',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
       ),
     );
   }
 
-  double _offerPrice(
-    double basePrice,
-    double multiplier,
-  ) {
+  double _offerPrice(double basePrice, double multiplier) {
     return basePrice * multiplier;
   }
 

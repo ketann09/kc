@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kabadiwala_connect/features/collector/new_scrap_lot_screen.dart';
+import 'package:kabadiwala_connect/features/collector/transaction_created_screen.dart';
 
 import '../../features/collector/nearby_recyclers_screen.dart';
 import '../../features/onboarding/city_selection_screen.dart';
@@ -8,6 +9,9 @@ import '../../features/onboarding/otp_screen.dart';
 import '../../features/onboarding/role_selection_screen.dart';
 import '../../features/onboarding/state_selection_screen.dart';
 import '../../features/collector/collector_dashboard_screen.dart';
+import '../../features/collector/accept_offer_screen.dart';
+import '../../features/recycler/incoming_lot_screen.dart';
+import '../../features/recycler/recycler_dashboard_screen.dart';
 
 class AppRouter {
   AppRouter._();
@@ -49,16 +53,18 @@ class AppRouter {
           builder: (_) => const CollectorDashboardScreen(),
         );
 
-      case '/recycler-dashboard':
-        return MaterialPageRoute(
-          builder: (_) => const Scaffold(
-            body: Center(child: Text('Recycler dashboard coming next')),
-          ),
-        );
       case '/new-lot':
         return MaterialPageRoute(builder: (_) => const NewScrapLotScreen());
       case '/recyclers':
-        return MaterialPageRoute(settings: settings,builder: (_) => const NearbyRecyclersScreen());
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const NearbyRecyclersScreen(),
+        );
+      case '/accept-offer':
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AcceptOfferScreen(),
+        );
       case '/offer-accepted':
         return MaterialPageRoute(
           builder: (_) => const Scaffold(
@@ -69,6 +75,21 @@ class AppRouter {
               ),
             ),
           ),
+        );
+      case '/transaction-created':
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const TransactionCreatedScreen(),
+        );
+      case '/recycler-dashboard':
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const RecyclerDashboardScreen(),
+        );
+      case '/incoming-lot':
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const IncomingLotScreen(),
         );
 
       default:

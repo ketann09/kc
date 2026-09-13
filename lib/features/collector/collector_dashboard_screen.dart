@@ -45,9 +45,7 @@ class CollectorDashboardScreen extends StatelessWidget {
               // Header
               Row(
                 children: [
-                  _BackButton(
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                  _BackButton(onPressed: () => Navigator.pop(context)),
 
                   const SizedBox(width: 16),
 
@@ -85,10 +83,7 @@ class CollectorDashboardScreen extends StatelessWidget {
                 padding: EdgeInsets.only(left: 56),
                 child: Text(
                   'आपके पास कबाड़ का भाव, आज के लिए',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF777777),
-                  ),
+                  style: TextStyle(fontSize: 15, color: Color(0xFF777777)),
                 ),
               ),
 
@@ -111,21 +106,12 @@ class CollectorDashboardScreen extends StatelessWidget {
                 height: 58,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/new-lot',
-                    );
+                    Navigator.pushNamed(context, '/new-lot');
                   },
-                  icon: const Icon(
-                    Icons.add_rounded,
-                    size: 22,
-                  ),
+                  icon: const Icon(Icons.add_rounded, size: 22),
                   label: const Text(
                     'नया लॉट बनाएँ',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF147A65),
@@ -150,9 +136,7 @@ class CollectorDashboardScreen extends StatelessWidget {
 class _RateCard extends StatelessWidget {
   final _ScrapRate rate;
 
-  const _RateCard({
-    required this.rate,
-  });
+  const _RateCard({required this.rate});
 
   @override
   Widget build(BuildContext context) {
@@ -161,9 +145,7 @@ class _RateCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F8F5),
-        border: Border.all(
-          color: const Color(0xFFE1E1DC),
-        ),
+        border: Border.all(color: const Color(0xFFE1E1DC)),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -175,11 +157,7 @@ class _RateCard extends StatelessWidget {
               color: const Color(0xFFE2F2EB),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              rate.icon,
-              size: 21,
-              color: const Color(0xFF147A65),
-            ),
+            child: Icon(rate.icon, size: 21, color: const Color(0xFF147A65)),
           ),
 
           const SizedBox(width: 13),
@@ -222,10 +200,7 @@ class _RateCard extends StatelessWidget {
 
           const Text(
             '/kg',
-            style: TextStyle(
-              fontSize: 11,
-              color: Color(0xFF888888),
-            ),
+            style: TextStyle(fontSize: 11, color: Color(0xFF888888)),
           ),
         ],
       ),
@@ -236,9 +211,7 @@ class _RateCard extends StatelessWidget {
 class _BackButton extends StatelessWidget {
   final VoidCallback onPressed;
 
-  const _BackButton({
-    required this.onPressed,
-  });
+  const _BackButton({required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -249,16 +222,10 @@ class _BackButton extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          border: Border.all(
-            color: const Color(0xFF222222),
-            width: 1.5,
-          ),
+          border: Border.all(color: const Color(0xFF222222), width: 1.5),
           shape: BoxShape.circle,
         ),
-        child: const Icon(
-          Icons.arrow_back_rounded,
-          size: 22,
-        ),
+        child: const Icon(Icons.arrow_back_rounded, size: 22),
       ),
     );
   }
