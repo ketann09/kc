@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class OtpScreen extends StatefulWidget {
   final String mobileNumber;
 
-  const OtpScreen({
-    super.key,
-    required this.mobileNumber,
-  });
+  const OtpScreen({super.key, required this.mobileNumber});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -26,14 +23,19 @@ class _OtpScreenState extends State<OtpScreen> {
 
     if (otp.length != 4) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('कृपया 4 अंकों का OTP दर्ज करें'),
-        ),
+        const SnackBar(content: Text('कृपया 4 अंकों का OTP दर्ज करें')),
       );
       return;
     }
 
-    Navigator.pushReplacementNamed(context, '/role');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'बैकएंड पर OTP सेवा उपलब्ध नहीं है। कृपया मोबाइल नंबर और पासवर्ड से लॉग इन करें।',
+        ),
+      ),
+    );
+    Navigator.pushReplacementNamed(context, '/');
   }
 
   @override
@@ -85,10 +87,7 @@ class _OtpScreenState extends State<OtpScreen> {
               Container(
                 height: 74,
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black,
-                    width: 2,
-                  ),
+                  border: Border.all(color: Colors.black, width: 2),
                   borderRadius: BorderRadius.circular(17),
                 ),
                 child: TextField(
@@ -132,10 +131,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                   child: const Text(
                     'सत्यापित करें',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

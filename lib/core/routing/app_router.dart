@@ -4,7 +4,6 @@ import 'package:kabadiwala_connect/features/collector/transaction_created_screen
 
 import '../../features/collector/nearby_recyclers_screen.dart';
 import '../../features/onboarding/city_selection_screen.dart';
-import '../../features/onboarding/mobile_screen.dart';
 import '../../features/onboarding/otp_screen.dart';
 import '../../features/onboarding/role_selection_screen.dart';
 import '../../features/onboarding/state_selection_screen.dart';
@@ -12,6 +11,7 @@ import '../../features/collector/collector_dashboard_screen.dart';
 import '../../features/collector/accept_offer_screen.dart';
 import '../../features/recycler/incoming_lot_screen.dart';
 import '../../features/recycler/recycler_dashboard_screen.dart';
+import '../../features/authentication/presentation/auth_gate.dart';
 
 class AppRouter {
   AppRouter._();
@@ -19,7 +19,7 @@ class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
-        return MaterialPageRoute(builder: (_) => const MobileScreen());
+        return MaterialPageRoute(builder: (_) => const AuthGate());
 
       case '/otp':
         final mobileNumber = settings.arguments as String? ?? '';
@@ -93,7 +93,7 @@ class AppRouter {
         );
 
       default:
-        return MaterialPageRoute(builder: (_) => const MobileScreen());
+        return MaterialPageRoute(builder: (_) => const AuthGate());
     }
   }
 }
