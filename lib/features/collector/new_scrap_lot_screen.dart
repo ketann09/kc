@@ -5,6 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/network/api_client.dart';
+import '../../domain/entities/lot_entity.dart';
+import '../authentication/presentation/bloc/auth_bloc.dart';
+import '../authentication/presentation/bloc/auth_state.dart';
 import 'collector_dependency_container.dart';
 import 'presentation/bloc/new_lot/new_lot_bloc.dart';
 import 'presentation/bloc/new_lot/new_lot_event.dart';
@@ -109,6 +112,52 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
     super.dispose();
   }
 
+  LotLocationEntity _resolveLocation(BuildContext context) {
+    String? stateName;
+    String? cityName;
+    String? street;
+    double? lat;
+    double? lng;
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is Authenticated) {
+        final address = authState.user.address;
+        stateName = address?.state;
+        cityName = address?.city;
+        street = address?.street;
+        lat = address?.latitude;
+        lng = address?.longitude;
+      }
+    } catch (_) {}
+
+    if (stateName == null ||
+        stateName.isEmpty ||
+        cityName == null ||
+        cityName.isEmpty) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map) {
+        stateName ??= args['state'] as String?;
+        cityName ??= args['city'] as String?;
+      }
+    }
+
+    final fullAddress =
+        street ??
+        ((cityName != null && stateName != null)
+            ? '$cityName, $stateName'
+            : null);
+
+    return LotLocationEntity(
+      address: fullAddress,
+      state: stateName,
+      city: cityName,
+      pickupAddress: fullAddress,
+      latitude: lat,
+      longitude: lng,
+    );
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? photo = await _picker.pickImage(
@@ -117,7 +166,10 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
       );
 
       if (photo != null && mounted) {
-        context.read<NewLotBloc>().add(NewLotImageSelected(photo.path));
+        final loc = _resolveLocation(context);
+        context.read<NewLotBloc>().add(
+          NewLotImageSelected(photo.path, state: loc.state, city: loc.city),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -202,14 +254,22 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
         : updated.toStringAsFixed(1);
 
     _weightController.text = formatted;
+    final loc = _resolveLocation(context);
     context.read<NewLotBloc>().add(
-      NewLotWeightQuantityChanged(weightKg: updated),
+      NewLotWeightQuantityChanged(
+        weightKg: updated,
+        state: loc.state,
+        city: loc.city,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<NewLotBloc, NewLotState>(
+      listenWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.errorMessage != current.errorMessage,
       listener: (context, state) {
         if (state.status == NewLotStatus.failure &&
             state.errorMessage != null &&
@@ -219,6 +279,13 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               content: Text(state.errorMessage!),
               backgroundColor: Colors.red.shade700,
             ),
+          );
+        } else if (state.status == NewLotStatus.success &&
+            state.createdLot != null) {
+          Navigator.pushNamed(
+            context,
+            '/recyclers',
+            arguments: state.createdLot!.id,
           );
         }
       },
@@ -607,8 +674,13 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
 
             return InkWell(
               onTap: () {
+                final loc = _resolveLocation(context);
                 context.read<NewLotBloc>().add(
-                  NewLotCategoryChanged(category: cat.value),
+                  NewLotCategoryChanged(
+                    category: cat.value,
+                    state: loc.state,
+                    city: loc.city,
+                  ),
                 );
               },
               borderRadius: BorderRadius.circular(14),
@@ -732,8 +804,13 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 onChanged: (val) {
                   final weight = double.tryParse(val.trim());
                   if (weight != null && weight > 0) {
+                    final loc = _resolveLocation(context);
                     context.read<NewLotBloc>().add(
-                      NewLotWeightQuantityChanged(weightKg: weight),
+                      NewLotWeightQuantityChanged(
+                        weightKg: weight,
+                        state: loc.state,
+                        city: loc.city,
+                      ),
                     );
                   }
                 },
@@ -811,25 +888,34 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   color: Color(0xFF191919),
                 ),
               ),
-              if (hasPrice && state.priceEstimate!.recommendedRateInr > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF176B45),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '₹${state.priceEstimate!.recommendedRateInr.toStringAsFixed(0)} / KG',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
+              if (hasPrice && state.priceEstimate!.recommendedRateInr > 0) ...[
+                Builder(
+                  builder: (context) {
+                    final unit = state.priceEstimate!.unit;
+                    final unitLabel = unit.toLowerCase().contains('piece')
+                        ? 'Piece'
+                        : 'KG';
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF176B45),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '₹${state.priceEstimate!.recommendedRateInr.toStringAsFixed(0)} / $unitLabel',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    );
+                  },
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 10),
@@ -923,13 +1009,12 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           child: ElevatedButton.icon(
             onPressed: (isFormValid && !isSubmitting)
                 ? () {
-                    // Structurally prepared for Task 5.3.4 submission dispatch
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'लॉट तैयार है (रीसाइक्लर खोज शुरू की जा रही है)',
-                        ),
-                        duration: Duration(seconds: 1),
+                    final loc = _resolveLocation(context);
+                    context.read<NewLotBloc>().add(
+                      NewLotSubmitted(
+                        location: loc,
+                        state: loc.state,
+                        city: loc.city,
                       ),
                     );
                   }

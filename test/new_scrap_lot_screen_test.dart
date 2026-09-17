@@ -148,5 +148,100 @@ void main() {
         populatedBloc.close();
       },
     );
+
+    testWidgets(
+      'Displays dynamic rate unit "Piece" when price estimate unit is per_piece',
+      (tester) async {
+        final populatedBloc = NewLotBloc(
+          classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+          estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+          createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+        );
+
+        populatedBloc.emit(
+          const NewLotState(
+            status: NewLotStatus.priced,
+            imagePath: 'test_path/crt.jpg',
+            category: 'CRT',
+            classification: MLClassificationEntity(
+              category: 'CRT',
+              confidence: 0.98,
+              confidencePercent: 98.0,
+            ),
+            weightKg: 10.0,
+            quantity: 1,
+            priceEstimate: MLPriceEntity(
+              category: 'CRT',
+              recommendedRateInr: 180.0,
+              unit: 'per_piece',
+              estimatedValueInr: 180.0,
+              estimatedValueMinInr: 170.0,
+              estimatedValueMaxInr: 190.0,
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(createWidgetUnderTest(bloc: populatedBloc));
+        await tester.pumpAndSettle();
+
+        expect(find.text('₹180 / Piece'), findsOneWidget);
+        expect(find.text('₹180'), findsOneWidget);
+
+        populatedBloc.close();
+      },
+    );
+
+    testWidgets(
+      'Tapping primary CTA dispatches NewLotSubmitted and navigates to /recyclers on success',
+      (tester) async {
+        String? navigatedLotId;
+
+        final populatedBloc = NewLotBloc(
+          classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+          estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+          createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+        );
+
+        populatedBloc.emit(
+          const NewLotState(
+            status: NewLotStatus.priced,
+            imagePath: 'test_path/photo.jpg',
+            category: 'Plastic',
+            weightKg: 5.0,
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.lightTheme,
+            routes: {
+              '/recyclers': (context) {
+                navigatedLotId =
+                    ModalRoute.of(context)?.settings.arguments as String?;
+                return const Scaffold(body: Text('Nearby Recyclers Screen'));
+              },
+            },
+            home: BlocProvider<NewLotBloc>.value(
+              value: populatedBloc,
+              child: const NewScrapLotScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final ctaFinder = find.widgetWithText(
+          ElevatedButton,
+          'रीसाइक्लर खोजें',
+        );
+        expect(ctaFinder, findsOneWidget);
+        await tester.tap(ctaFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Nearby Recyclers Screen'), findsOneWidget);
+        expect(navigatedLotId, equals('lot_real_123'));
+
+        populatedBloc.close();
+      },
+    );
   });
 }

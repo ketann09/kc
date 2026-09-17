@@ -420,6 +420,143 @@ void main() {
         ),
       );
     });
+
+    test(
+      'Debounces rapid weight changes and only fetches latest price',
+      () async {
+        final testBloc = NewLotBloc(
+          classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+          estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+          createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+          pricingDebounceDuration: const Duration(milliseconds: 50),
+        );
+
+        testBloc.add(const NewLotImageSelected('path/to/img.jpg'));
+        await Future.delayed(const Duration(milliseconds: 10));
+
+        testBloc.add(
+          const NewLotWeightQuantityChanged(
+            weightKg: 2.0,
+            quantity: 1,
+            state: 'Maharashtra',
+            city: 'Mumbai',
+          ),
+        );
+        testBloc.add(
+          const NewLotWeightQuantityChanged(
+            weightKg: 5.0,
+            quantity: 1,
+            state: 'Maharashtra',
+            city: 'Mumbai',
+          ),
+        );
+        testBloc.add(
+          const NewLotWeightQuantityChanged(
+            weightKg: 10.0,
+            quantity: 1,
+            state: 'Maharashtra',
+            city: 'Mumbai',
+          ),
+        );
+
+        await expectLater(
+          testBloc.stream,
+          emitsThrough(
+            predicate<NewLotState>(
+              (s) =>
+                  s.status == NewLotStatus.priced &&
+                  s.weightKg == 10.0 &&
+                  s.priceEstimate?.estimatedValueInr == 250.0,
+            ),
+          ),
+        );
+
+        testBloc.close();
+      },
+    );
+
+    test('Image selection with state and city triggers pricing upon classification', () async {
+      bloc.add(
+        const NewLotImageSelected(
+          'path/to/img.jpg',
+          state: 'Uttar Pradesh',
+          city: 'Ghaziabad',
+        ),
+      );
+
+      await expectLater(
+        bloc.stream,
+        emitsThrough(
+          predicate<NewLotState>(
+            (s) =>
+                s.status == NewLotStatus.priced &&
+                s.priceEstimate != null &&
+                s.category == 'Plastic',
+          ),
+        ),
+      );
+    });
+
+    test('Weight less than 0.1 KG fails submission validation', () async {
+      bloc.add(const NewLotImageSelected('path/to/img.jpg'));
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      bloc.add(const NewLotWeightQuantityChanged(weightKg: 0.05));
+      bloc.add(
+        const NewLotSubmitted(
+          location: LotLocationEntity(
+            city: 'Ghaziabad',
+            state: 'Uttar Pradesh',
+          ),
+        ),
+      );
+
+      await expectLater(
+        bloc.stream,
+        emitsThrough(
+          predicate<NewLotState>(
+            (s) =>
+                s.status == NewLotStatus.failure &&
+                s.errorType == NewLotErrorType.submission &&
+                s.errorMessage != null &&
+                s.errorMessage!.contains('0.1 KG'),
+          ),
+        ),
+      );
+    });
+
+    test('Duplicate submit while submitting is ignored', () async {
+      bloc.add(const NewLotImageSelected('path/to/img.jpg'));
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      // First submit
+      bloc.add(
+        const NewLotSubmitted(
+          location: LotLocationEntity(
+            city: 'Ghaziabad',
+            state: 'Uttar Pradesh',
+          ),
+        ),
+      );
+      // Immediate second submit
+      bloc.add(
+        const NewLotSubmitted(
+          location: LotLocationEntity(
+            city: 'Ghaziabad',
+            state: 'Uttar Pradesh',
+          ),
+        ),
+      );
+
+      await expectLater(
+        bloc.stream,
+        emitsThrough(
+          predicate<NewLotState>(
+            (s) => s.status == NewLotStatus.success && s.createdLot != null,
+          ),
+        ),
+      );
+    });
   });
 
   group('MatchmakingBloc Tests', () {

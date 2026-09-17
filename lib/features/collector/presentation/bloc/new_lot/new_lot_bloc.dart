@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/network/api_exception.dart';
@@ -12,11 +13,14 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
   final ClassifyScrapImageUseCase classifyScrapImageUseCase;
   final EstimatePriceUseCase estimatePriceUseCase;
   final CreateCollectorLotUseCase createCollectorLotUseCase;
+  final Duration pricingDebounceDuration;
+  int _pricingRequestId = 0;
 
   NewLotBloc({
     required this.classifyScrapImageUseCase,
     required this.estimatePriceUseCase,
     required this.createCollectorLotUseCase,
+    this.pricingDebounceDuration = const Duration(milliseconds: 300),
   }) : super(const NewLotState()) {
     on<NewLotImageSelected>(_onImageSelected);
     on<NewLotCategoryChanged>(_onCategoryChanged);
@@ -30,6 +34,9 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
     NewLotImageSelected event,
     Emitter<NewLotState> emit,
   ) async {
+    debugPrint(
+      '[ML_DEBUG] NewLotBloc._onImageSelected received image path: ${event.imagePath}',
+    );
     emit(
       state.copyWith(
         status: NewLotStatus.classifying,
@@ -44,6 +51,10 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
         imagePath: event.imagePath,
       );
 
+      debugPrint(
+        '[ML_DEBUG] Classification success in NewLotBloc: category=${classification.category}, confidence=${classification.confidencePercent}%',
+      );
+
       emit(
         state.copyWith(
           status: NewLotStatus.classified,
@@ -53,7 +64,27 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
           clearErrorMessage: true,
         ),
       );
+
+      if (event.state != null &&
+          event.state!.isNotEmpty &&
+          event.city != null &&
+          event.city!.isNotEmpty &&
+          state.weightKg >= 0.1) {
+        await _runPriceEstimation(
+          emit: emit,
+          category: classification.category,
+          stateName: event.state!,
+          cityName: event.city!,
+          weightKg: state.weightKg,
+          quantity: state.quantity,
+        );
+      }
     } on ApiException catch (e) {
+      debugPrint('[ML_DEBUG] ApiException after conversion:');
+      debugPrint('[ML_DEBUG]   ApiException type: ${e.type}');
+      debugPrint('[ML_DEBUG]   ApiException message: ${e.message}');
+      debugPrint('[ML_DEBUG]   ApiException status code: ${e.statusCode}');
+      debugPrint('[ML_DEBUG]   ApiException data: ${e.data}');
       emit(
         state.copyWith(
           status: NewLotStatus.failure,
@@ -61,7 +92,11 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
           errorMessage: e.message,
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[ML_DEBUG] Unexpected exception in NewLotBloc._onImageSelected: $e',
+      );
+      debugPrint('[ML_DEBUG] Stack trace: $stackTrace');
       emit(
         state.copyWith(
           status: NewLotStatus.failure,
@@ -126,6 +161,7 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
         cityName: event.city!,
         weightKg: event.weightKg,
         quantity: event.quantity,
+        debounce: true,
       );
     }
   }
@@ -163,7 +199,17 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
     required String cityName,
     required double weightKg,
     required int quantity,
+    bool debounce = false,
   }) async {
+    final currentRequestId = ++_pricingRequestId;
+
+    if (debounce && pricingDebounceDuration > Duration.zero) {
+      await Future.delayed(pricingDebounceDuration);
+      if (currentRequestId != _pricingRequestId) {
+        return; // Superseded by a newer pricing request
+      }
+    }
+
     emit(
       state.copyWith(
         status: NewLotStatus.pricing,
@@ -181,6 +227,10 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
         totalWeightKg: weightKg,
       );
 
+      if (currentRequestId != _pricingRequestId) {
+        return; // Stale pricing response dropped
+      }
+
       emit(
         state.copyWith(
           status: NewLotStatus.priced,
@@ -190,6 +240,7 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
         ),
       );
     } on ApiException catch (e) {
+      if (currentRequestId != _pricingRequestId) return;
       emit(
         state.copyWith(
           status: NewLotStatus.failure,
@@ -198,6 +249,7 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
         ),
       );
     } catch (e) {
+      if (currentRequestId != _pricingRequestId) return;
       emit(
         state.copyWith(
           status: NewLotStatus.failure,
@@ -212,12 +264,27 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
     NewLotSubmitted event,
     Emitter<NewLotState> emit,
   ) async {
-    if (state.imagePath == null) {
+    if (state.status == NewLotStatus.submitting) {
+      return;
+    }
+
+    if (state.imagePath == null || state.imagePath!.isEmpty) {
       emit(
         state.copyWith(
           status: NewLotStatus.failure,
           errorType: NewLotErrorType.submission,
           errorMessage: 'Please select an image for the lot',
+        ),
+      );
+      return;
+    }
+
+    if (state.weightKg < 0.1) {
+      emit(
+        state.copyWith(
+          status: NewLotStatus.failure,
+          errorType: NewLotErrorType.submission,
+          errorMessage: 'Weight must be at least 0.1 KG',
         ),
       );
       return;
@@ -276,6 +343,7 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
   }
 
   void _onReset(NewLotReset event, Emitter<NewLotState> emit) {
+    _pricingRequestId++;
     emit(const NewLotState());
   }
 }

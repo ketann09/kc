@@ -15,6 +15,12 @@ abstract class LotsRemoteDataSource {
     String? status,
   });
 
+  Future<List<LotModel>> getRecyclerLots({
+    int page = 1,
+    int limit = 10,
+    String? status,
+  });
+
   Future<LotModel> getLotById(String lotId);
 
   Future<LotModel> acceptLot({required String lotId, double? price});
@@ -138,6 +144,42 @@ class LotsRemoteDataSourceImpl implements LotsRemoteDataSource {
 
     final response = await apiClient.get<Map<String, dynamic>>(
       '/lots/collector',
+      queryParameters: queryParams,
+    );
+
+    final raw = response.data;
+    if (raw == null || raw['data'] == null) {
+      return [];
+    }
+
+    final dynamic dataField = raw['data'];
+    List? list;
+    if (dataField is Map) {
+      list = (dataField['lots'] ?? dataField['data']) as List?;
+    } else if (dataField is List) {
+      list = dataField;
+    }
+
+    return list
+            ?.whereType<Map>()
+            .map((e) => LotModel.fromJson(Map<String, dynamic>.from(e)))
+            .toList() ??
+        [];
+  }
+
+  @override
+  Future<List<LotModel>> getRecyclerLots({
+    int page = 1,
+    int limit = 10,
+    String? status,
+  }) async {
+    final queryParams = <String, dynamic>{'page': page, 'limit': limit};
+    if (status != null && status.isNotEmpty) {
+      queryParams['status'] = status;
+    }
+
+    final response = await apiClient.get<Map<String, dynamic>>(
+      '/lots/recycler',
       queryParameters: queryParams,
     );
 

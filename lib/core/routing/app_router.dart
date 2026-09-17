@@ -11,6 +11,7 @@ import '../../features/collector/collector_dashboard_screen.dart';
 import '../../features/collector/accept_offer_screen.dart';
 import '../../features/recycler/incoming_lot_screen.dart';
 import '../../features/recycler/recycler_dashboard_screen.dart';
+import '../../features/recycler/recycler_lot_details_placeholder_screen.dart';
 import '../../features/authentication/presentation/auth_gate.dart';
 
 class AppRouter {
@@ -56,9 +57,13 @@ class AppRouter {
       case '/new-lot':
         return MaterialPageRoute(builder: (_) => const NewScrapLotScreen());
       case '/recyclers':
+        final args = settings.arguments;
+        final lotId = args is String
+            ? args
+            : (args is Map ? args['lotId'] as String? : null);
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) => const NearbyRecyclersScreen(),
+          builder: (_) => NearbyRecyclersScreen(lotId: lotId),
         );
       case '/accept-offer':
         return MaterialPageRoute(
@@ -87,6 +92,22 @@ class AppRouter {
           builder: (_) => const RecyclerDashboardScreen(),
         );
       case '/incoming-lot':
+      case '/recycler-lot-details':
+        final args = settings.arguments;
+        if (args is String && args.isNotEmpty) {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => RecyclerLotDetailsPlaceholderScreen(lotId: args),
+          );
+        }
+        if (args is Map && args['lotId'] is String) {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => RecyclerLotDetailsPlaceholderScreen(
+              lotId: args['lotId'] as String,
+            ),
+          );
+        }
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const IncomingLotScreen(),

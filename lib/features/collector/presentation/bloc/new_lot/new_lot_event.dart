@@ -11,11 +11,13 @@ abstract class NewLotEvent extends Equatable {
 
 class NewLotImageSelected extends NewLotEvent {
   final String imagePath;
+  final String? state;
+  final String? city;
 
-  const NewLotImageSelected(this.imagePath);
+  const NewLotImageSelected(this.imagePath, {this.state, this.city});
 
   @override
-  List<Object?> get props => [imagePath];
+  List<Object?> get props => [imagePath, state, city];
 }
 
 class NewLotCategoryChanged extends NewLotEvent {
