@@ -42,6 +42,13 @@ class FakeRecyclerLotsRepository implements RecyclerLotsRepository {
     if (lotsToReturn.isNotEmpty) return lotsToReturn.first;
     throw ApiException.unknown(message: 'Not found');
   }
+
+  @override
+  Future<LotEntity> acceptLot({required String lotId, double? price}) async {
+    lastLotId = lotId;
+    if (lotsToReturn.isNotEmpty) return lotsToReturn.first;
+    throw ApiException.unknown(message: 'Not found');
+  }
 }
 
 void main() {

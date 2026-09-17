@@ -11,7 +11,7 @@ import '../../features/collector/collector_dashboard_screen.dart';
 import '../../features/collector/accept_offer_screen.dart';
 import '../../features/recycler/incoming_lot_screen.dart';
 import '../../features/recycler/recycler_dashboard_screen.dart';
-import '../../features/recycler/recycler_lot_details_placeholder_screen.dart';
+import '../../features/recycler/recycler_lot_details_screen.dart';
 import '../../features/authentication/presentation/auth_gate.dart';
 
 class AppRouter {
@@ -97,15 +97,14 @@ class AppRouter {
         if (args is String && args.isNotEmpty) {
           return MaterialPageRoute(
             settings: settings,
-            builder: (_) => RecyclerLotDetailsPlaceholderScreen(lotId: args),
+            builder: (_) => RecyclerLotDetailsScreen(lotId: args),
           );
         }
         if (args is Map && args['lotId'] is String) {
           return MaterialPageRoute(
             settings: settings,
-            builder: (_) => RecyclerLotDetailsPlaceholderScreen(
-              lotId: args['lotId'] as String,
-            ),
+            builder: (_) =>
+                RecyclerLotDetailsScreen(lotId: args['lotId'] as String),
           );
         }
         return MaterialPageRoute(

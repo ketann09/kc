@@ -8,4 +8,6 @@ abstract class RecyclerLotsRepository {
   });
 
   Future<LotEntity> getLotById(String lotId);
+
+  Future<LotEntity> acceptLot({required String lotId, double? price});
 }
