@@ -68,6 +68,20 @@ class MockRecyclerLotsRepository implements RecyclerLotsRepository {
     }
     throw Exception('Not found');
   }
+
+  @override
+  Future<LotEntity> updateLotLifecycle({
+    required String lotId,
+    required String status,
+    double? actualWeight,
+    double? finalPrice,
+  }) async {
+    if (shouldFail) {
+      throw Exception(errorMessage);
+    }
+    if (lot != null) return lot!;
+    throw Exception('Not found');
+  }
 }
 
 void main() {
@@ -298,7 +312,9 @@ void main() {
         // Verify confirmation dialog title and content with estimated price
         expect(find.text('लॉट स्वीकृति की पुष्टि'), findsOneWidget);
         expect(
-          find.textContaining('क्या आप इस लॉट को प्रदर्शित अनुमानित मूल्य ₹12500 पर स्वीकार करना चाहते हैं?'),
+          find.textContaining(
+            'क्या आप इस लॉट को प्रदर्शित अनुमानित मूल्य ₹12500 पर स्वीकार करना चाहते हैं?',
+          ),
           findsOneWidget,
         );
 
@@ -346,7 +362,10 @@ void main() {
         expect(find.text('स्वीकृत'), findsOneWidget);
 
         // Acceptance banner
-        expect(find.text('यह लॉट आपके द्वारा स्वीकार किया गया है'), findsOneWidget);
+        expect(
+          find.text('यह लॉट आपके द्वारा स्वीकार किया गया है'),
+          findsOneWidget,
+        );
         expect(find.textContaining('कलेक्टर से संपर्क कर'), findsOneWidget);
 
         // Accept CTA button should not exist

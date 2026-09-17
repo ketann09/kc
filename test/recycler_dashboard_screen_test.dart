@@ -40,6 +40,17 @@ class MockRecyclerLotsRepository implements RecyclerLotsRepository {
     if (lots.isNotEmpty) return lots.first;
     throw Exception('Lot not found');
   }
+
+  @override
+  Future<LotEntity> updateLotLifecycle({
+    required String lotId,
+    required String status,
+    double? actualWeight,
+    double? finalPrice,
+  }) async {
+    if (lots.isNotEmpty) return lots.first;
+    throw Exception('Lot not found');
+  }
 }
 
 void main() {

@@ -57,6 +57,22 @@ class FakeRecyclerLotsRepository implements RecyclerLotsRepository {
     }
     throw ApiException.unknown(message: 'Lot not found');
   }
+
+  @override
+  Future<LotEntity> updateLotLifecycle({
+    required String lotId,
+    required String status,
+    double? actualWeight,
+    double? finalPrice,
+  }) async {
+    if (shouldFail) {
+      throw ApiException.server(message: failureMessage);
+    }
+    if (lotToReturn != null) {
+      return lotToReturn!;
+    }
+    throw ApiException.unknown(message: 'Lot not found');
+  }
 }
 
 void main() {
@@ -208,72 +224,67 @@ void main() {
       expect(fakeRepo.lastLotId, 'lot-unique-id-777');
     });
 
-    test(
-      '6. Successful AcceptRecyclerLotEvent emits isAccepting true then false with status accepted and success message',
-      () async {
-        final acceptedLot = acceptedSampleLot;
-        fakeRepo.lotToReturn = sampleLot;
+    test('6. Successful AcceptRecyclerLotEvent emits isAccepting true then false with status accepted and success message', () async {
+      final acceptedLot = acceptedSampleLot;
+      fakeRepo.lotToReturn = sampleLot;
 
-        // First load lot
-        bloc.add(const FetchRecyclerLotDetailsEvent('lot-xyz-999'));
-        await pumpEventQueue();
-        expect(bloc.state, isA<RecyclerLotDetailsLoaded>());
+      // First load lot
+      bloc.add(const FetchRecyclerLotDetailsEvent('lot-xyz-999'));
+      await pumpEventQueue();
+      expect(bloc.state, isA<RecyclerLotDetailsLoaded>());
 
-        // Now prepare accept response
-        fakeRepo.lotToReturn = acceptedLot;
+      // Now prepare accept response
+      fakeRepo.lotToReturn = acceptedLot;
 
-        expectLater(
-          bloc.stream,
-          emitsInOrder([
-            predicate<RecyclerLotDetailsState>((s) {
-              return s is RecyclerLotDetailsLoaded && s.isAccepting == true;
-            }),
-            predicate<RecyclerLotDetailsState>((s) {
-              return s is RecyclerLotDetailsLoaded &&
-                  s.isAccepting == false &&
-                  s.lot.status == LotStatus.accepted &&
-                  s.actionSuccessMessage != null;
-            }),
-          ]),
-        );
+      expectLater(
+        bloc.stream,
+        emitsInOrder([
+          predicate<RecyclerLotDetailsState>((s) {
+            return s is RecyclerLotDetailsLoaded && s.isAccepting == true;
+          }),
+          predicate<RecyclerLotDetailsState>((s) {
+            return s is RecyclerLotDetailsLoaded &&
+                s.isAccepting == false &&
+                s.lot.status == LotStatus.accepted &&
+                s.actionSuccessMessage != null;
+          }),
+        ]),
+      );
 
-        bloc.add(const AcceptRecyclerLotEvent(lotId: 'lot-xyz-999'));
-      },
-    );
+      bloc.add(const AcceptRecyclerLotEvent(lotId: 'lot-xyz-999'));
+    });
 
-    test(
-      '7. Failed AcceptRecyclerLotEvent retains lot data and sets actionErrorMessage',
-      () async {
-        fakeRepo.lotToReturn = sampleLot;
+    test('7. Failed AcceptRecyclerLotEvent retains lot data and sets actionErrorMessage', () async {
+      fakeRepo.lotToReturn = sampleLot;
 
-        // First load lot
-        bloc.add(const FetchRecyclerLotDetailsEvent('lot-xyz-999'));
-        await pumpEventQueue();
-        expect(bloc.state, isA<RecyclerLotDetailsLoaded>());
+      // First load lot
+      bloc.add(const FetchRecyclerLotDetailsEvent('lot-xyz-999'));
+      await pumpEventQueue();
+      expect(bloc.state, isA<RecyclerLotDetailsLoaded>());
 
-        // Now configure failure
-        fakeRepo.shouldFail = true;
-        fakeRepo.failureMessage = 'लॉट पहले ही किसी अन्य रीसाइक्लर द्वारा स्वीकार किया जा चुका है';
+      // Now configure failure
+      fakeRepo.shouldFail = true;
+      fakeRepo.failureMessage =
+          'लॉट पहले ही किसी अन्य रीसाइक्लर द्वारा स्वीकार किया जा चुका है';
 
-        expectLater(
-          bloc.stream,
-          emitsInOrder([
-            predicate<RecyclerLotDetailsState>((s) {
-              return s is RecyclerLotDetailsLoaded && s.isAccepting == true;
-            }),
-            predicate<RecyclerLotDetailsState>((s) {
-              return s is RecyclerLotDetailsLoaded &&
-                  s.isAccepting == false &&
-                  s.lot.status == LotStatus.pending &&
-                  s.actionErrorMessage ==
-                      'लॉट पहले ही किसी अन्य रीसाइक्लर द्वारा स्वीकार किया जा चुका है';
-            }),
-          ]),
-        );
+      expectLater(
+        bloc.stream,
+        emitsInOrder([
+          predicate<RecyclerLotDetailsState>((s) {
+            return s is RecyclerLotDetailsLoaded && s.isAccepting == true;
+          }),
+          predicate<RecyclerLotDetailsState>((s) {
+            return s is RecyclerLotDetailsLoaded &&
+                s.isAccepting == false &&
+                s.lot.status == LotStatus.pending &&
+                s.actionErrorMessage ==
+                    'लॉट पहले ही किसी अन्य रीसाइक्लर द्वारा स्वीकार किया जा चुका है';
+          }),
+        ]),
+      );
 
-        bloc.add(const AcceptRecyclerLotEvent(lotId: 'lot-xyz-999'));
-      },
-    );
+      bloc.add(const AcceptRecyclerLotEvent(lotId: 'lot-xyz-999'));
+    });
 
     test('8. AcceptRecyclerLotEvent passes correct lotId and optional price to repository', () async {
       final acceptedLot = acceptedSampleLot;
@@ -283,7 +294,9 @@ void main() {
       await pumpEventQueue();
 
       fakeRepo.lotToReturn = acceptedLot;
-      bloc.add(const AcceptRecyclerLotEvent(lotId: 'lot-target-123', price: 12500.0));
+      bloc.add(
+        const AcceptRecyclerLotEvent(lotId: 'lot-target-123', price: 12500.0),
+      );
       await pumpEventQueue();
 
       expect(fakeRepo.acceptLotCallCount, 1);

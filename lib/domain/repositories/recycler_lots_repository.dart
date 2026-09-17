@@ -10,4 +10,11 @@ abstract class RecyclerLotsRepository {
   Future<LotEntity> getLotById(String lotId);
 
   Future<LotEntity> acceptLot({required String lotId, double? price});
+
+  Future<LotEntity> updateLotLifecycle({
+    required String lotId,
+    required String status,
+    double? actualWeight,
+    double? finalPrice,
+  });
 }

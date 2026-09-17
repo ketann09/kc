@@ -24,6 +24,13 @@ abstract class LotsRemoteDataSource {
   Future<LotModel> getLotById(String lotId);
 
   Future<LotModel> acceptLot({required String lotId, double? price});
+
+  Future<LotModel> updateLotLifecycle({
+    required String lotId,
+    required String status,
+    double? actualWeight,
+    double? finalPrice,
+  });
 }
 
 class LotsRemoteDataSourceImpl implements LotsRemoteDataSource {
@@ -233,6 +240,39 @@ class LotsRemoteDataSourceImpl implements LotsRemoteDataSource {
     final raw = response.data;
     if (raw == null) {
       throw Exception('Failed to accept lot');
+    }
+
+    final lotData = raw['data'] is Map
+        ? Map<String, dynamic>.from(raw['data'] as Map)
+        : raw;
+    return LotModel.fromJson(lotData);
+  }
+
+  @override
+  Future<LotModel> updateLotLifecycle({
+    required String lotId,
+    required String status,
+    double? actualWeight,
+    double? finalPrice,
+  }) async {
+    final payload = <String, dynamic>{
+      'status': status,
+    };
+    if (actualWeight != null) {
+      payload['actualWeight'] = actualWeight;
+    }
+    if (finalPrice != null) {
+      payload['finalPrice'] = finalPrice;
+    }
+
+    final response = await apiClient.patch<Map<String, dynamic>>(
+      '/lots/$lotId',
+      data: payload,
+    );
+
+    final raw = response.data;
+    if (raw == null) {
+      throw Exception('Failed to update lot lifecycle');
     }
 
     final lotData = raw['data'] is Map

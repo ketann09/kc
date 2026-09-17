@@ -29,4 +29,19 @@ class RecyclerLotsRepositoryImpl implements RecyclerLotsRepository {
   Future<LotEntity> acceptLot({required String lotId, double? price}) {
     return remoteDataSource.acceptLot(lotId: lotId, price: price);
   }
+
+  @override
+  Future<LotEntity> updateLotLifecycle({
+    required String lotId,
+    required String status,
+    double? actualWeight,
+    double? finalPrice,
+  }) {
+    return remoteDataSource.updateLotLifecycle(
+      lotId: lotId,
+      status: status,
+      actualWeight: actualWeight,
+      finalPrice: finalPrice,
+    );
+  }
 }
