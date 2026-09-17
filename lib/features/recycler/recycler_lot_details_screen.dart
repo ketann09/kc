@@ -13,10 +13,7 @@ import 'recycler_dependency_container.dart';
 class RecyclerLotDetailsScreen extends StatelessWidget {
   final String lotId;
 
-  const RecyclerLotDetailsScreen({
-    super.key,
-    required this.lotId,
-  });
+  const RecyclerLotDetailsScreen({super.key, required this.lotId});
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +29,9 @@ class RecyclerLotDetailsScreen extends StatelessWidget {
           } catch (_) {
             apiClient = ApiClient();
           }
-          final container =
-              RecyclerDependencyContainer.fromApiClient(apiClient);
+          final container = RecyclerDependencyContainer.fromApiClient(
+            apiClient,
+          );
           final bloc = container.createRecyclerLotDetailsBloc();
 
           bool isAuthenticated = true;
@@ -66,6 +64,15 @@ class _RecyclerLotDetailsView extends StatefulWidget {
 }
 
 class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
+  final TextEditingController _actualWeightController = TextEditingController();
+  String? _actualWeightError;
+
+  @override
+  void dispose() {
+    _actualWeightController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -105,6 +112,7 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
           listener: (context, state) {
             if (state is RecyclerLotDetailsLoaded) {
               if (state.actionSuccessMessage != null) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.actionSuccessMessage!),
@@ -113,6 +121,7 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
                   ),
                 );
               } else if (state.actionErrorMessage != null) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.actionErrorMessage!),
@@ -144,10 +153,7 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: Color(0xFF147A65),
-            strokeWidth: 3,
-          ),
+          CircularProgressIndicator(color: Color(0xFF147A65), strokeWidth: 3),
           SizedBox(height: 20),
           Text(
             'लॉट विवरण लोड हो रहा है...',
@@ -200,8 +206,8 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
             ElevatedButton.icon(
               onPressed: () {
                 context.read<RecyclerLotDetailsBloc>().add(
-                      RetryRecyclerLotDetailsEvent(widget.lotId),
-                    );
+                  RetryRecyclerLotDetailsEvent(widget.lotId),
+                );
               },
               icon: const Icon(Icons.refresh),
               label: const Text('पुनः प्रयास करें'),
@@ -223,50 +229,74 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     );
   }
 
-  Widget _buildLoadedState(BuildContext context, RecyclerLotDetailsLoaded state) {
+  Widget _buildLoadedState(
+    BuildContext context,
+    RecyclerLotDetailsLoaded state,
+  ) {
     final lot = state.lot;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
-    final materialTitle = (lot.materialName != null &&
-            lot.materialName!.isNotEmpty)
+    final materialTitle =
+        (lot.materialName != null && lot.materialName!.isNotEmpty)
         ? lot.materialName!
         : (lot.mlPrediction?.predictedCategory != null &&
-                lot.mlPrediction!.predictedCategory!.isNotEmpty)
-            ? lot.mlPrediction!.predictedCategory!
-            : (lot.description != null && lot.description!.isNotEmpty)
-                ? lot.description!
-                : 'स्क्रैप लॉट';
+              lot.mlPrediction!.predictedCategory!.isNotEmpty)
+        ? lot.mlPrediction!.predictedCategory!
+        : (lot.description != null && lot.description!.isNotEmpty)
+        ? lot.description!
+        : 'स्क्रैप लॉट';
 
+    final isCompleted = lot.status == LotStatus.completed;
     final weight = lot.actualWeight ?? lot.estimatedWeight;
     final weightText = weight >= 1.0
         ? '${weight.toStringAsFixed(weight % 1 == 0 ? 0 : 1)} किलो'
         : '${(weight * 1000).toStringAsFixed(0)} ग्राम';
 
-    final priceText = lot.estimatedPrice > 0
-        ? '₹${lot.estimatedPrice.toStringAsFixed(0)}'
+    final displayPrice = lot.finalPrice ?? lot.estimatedPrice;
+    final priceText = displayPrice > 0
+        ? '₹${displayPrice.toStringAsFixed(0)}'
         : 'मूल्य प्रतीक्षित';
+
+    final priceLabel = isCompleted ? 'अंतिम मूल्य' : 'अनुमानित मूल्य';
+    final weightLabel = (isCompleted || lot.actualWeight != null)
+        ? 'वास्तविक वजन'
+        : 'कुल वजन';
 
     final isPickup = lot.schedulePickup != null;
 
     String statusHindi;
+    Color statusColor;
+    Color statusBgColor;
     switch (lot.status) {
       case LotStatus.pending:
         statusHindi = 'लंबित';
+        statusColor = const Color(0xFFF57C00);
+        statusBgColor = const Color(0xFFFFF3E0);
         break;
       case LotStatus.accepted:
         statusHindi = 'स्वीकृत';
+        statusColor = const Color(0xFF1B5E20);
+        statusBgColor = const Color(0xFFE8F5E9);
         break;
       case LotStatus.picked:
-        statusHindi = 'पिक किया गया';
+        statusHindi = 'पिकअप के लिए तैयार';
+        statusColor = const Color(0xFF0288D1);
+        statusBgColor = const Color(0xFFE1F5FE);
         break;
       case LotStatus.delivered:
         statusHindi = 'डिलीवर किया गया';
+        statusColor = const Color(0xFF7B1FA2);
+        statusBgColor = const Color(0xFFF3E5F5);
         break;
       case LotStatus.completed:
-        statusHindi = 'पूर्ण';
+        statusHindi = 'पूरा हुआ';
+        statusColor = const Color(0xFF2E7D32);
+        statusBgColor = const Color(0xFFE8F5E9);
         break;
       case LotStatus.cancelled:
         statusHindi = 'रद्द';
+        statusColor = const Color(0xFFC62828);
+        statusBgColor = const Color(0xFFFFEBEE);
         break;
     }
 
@@ -276,21 +306,21 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
       dateText = '${d.day}/${d.month}/${d.year}';
     }
 
-    final locationText = (lot.location.city != null &&
-            lot.location.city!.isNotEmpty)
+    final locationText =
+        (lot.location.city != null && lot.location.city!.isNotEmpty)
         ? (lot.location.state != null && lot.location.state!.isNotEmpty
-            ? '${lot.location.city}, ${lot.location.state}'
-            : lot.location.city!)
+              ? '${lot.location.city}, ${lot.location.state}'
+              : lot.location.city!)
         : (lot.location.address != null && lot.location.address!.isNotEmpty
-            ? lot.location.address!
-            : null);
+              ? lot.location.address!
+              : null);
 
     return RefreshIndicator(
       color: const Color(0xFF147A65),
       onRefresh: () async {
         context.read<RecyclerLotDetailsBloc>().add(
-              FetchRecyclerLotDetailsEvent(widget.lotId),
-            );
+          FetchRecyclerLotDetailsEvent(widget.lotId),
+        );
       },
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -329,15 +359,15 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF5EF),
+                  color: statusBgColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   statusHindi,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF147A65),
+                    color: statusColor,
                   ),
                 ),
               ),
@@ -360,9 +390,9 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'अनुमानित मूल्य',
-                          style: TextStyle(
+                        Text(
+                          priceLabel,
+                          style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF6B7280),
                           ),
@@ -379,19 +409,15 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
                       ],
                     ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 48,
-                    color: Colors.grey.shade200,
-                  ),
+                  Container(width: 1, height: 48, color: Colors.grey.shade200),
                   const SizedBox(width: 20),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'कुल वजन',
-                          style: TextStyle(
+                        Text(
+                          weightLabel,
+                          style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF6B7280),
                           ),
@@ -589,7 +615,8 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: lot.images.length,
-                        separatorBuilder: (context, index) => const SizedBox(width: 10),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 10),
                         itemBuilder: (context, index) {
                           final imgUrl = lot.images[index];
                           return ClipRRect(
@@ -599,15 +626,16 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
                               width: 100,
                               height: 100,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                width: 100,
-                                height: 100,
-                                color: Colors.grey.shade200,
-                                child: const Icon(
-                                  Icons.broken_image_outlined,
-                                  color: Colors.grey,
-                                ),
-                              ),
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    color: Colors.grey.shade200,
+                                    child: const Icon(
+                                      Icons.broken_image_outlined,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
                             ),
                           );
                         },
@@ -621,14 +649,14 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
 
           const SizedBox(height: 24),
 
-          // 6. Real Lot Acceptance CTA / Status Section
-          _buildAcceptanceSection(context, state, lot),
+          // 6. Real Lot Lifecycle Section
+          _buildLifecycleSection(context, state, lot),
         ],
       ),
     );
   }
 
-  Widget _buildAcceptanceSection(
+  Widget _buildLifecycleSection(
     BuildContext context,
     RecyclerLotDetailsLoaded state,
     LotEntity lot,
@@ -665,53 +693,387 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
             state.isAccepting
                 ? 'लॉट स्वीकार किया जा रहा है...'
                 : 'लॉट स्वीकार करें',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
         ),
       );
     } else if (lot.status == LotStatus.accepted) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFA5D6A7)),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.verified, color: Color(0xFF1B5E20), size: 22),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'यह लॉट आपके द्वारा स्वीकार किया गया है',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1B5E20),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'कलेक्टर से संपर्क कर लॉट का पिकअप या डिलीवरी सुनिश्चित करें।',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF2E7D32),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: state.isUpdatingLifecycle
+                  ? null
+                  : () => _showPickupConfirmationDialog(context, lot),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1565C0),
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: const Color(0xFF90CAF9),
+                disabledForegroundColor: Colors.white70,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 1,
+              ),
+              icon: state.isUpdatingLifecycle
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.local_shipping_outlined, size: 22),
+              label: Text(
+                state.isUpdatingLifecycle
+                    ? 'अपडेट किया जा रहा है...'
+                    : 'पिकअप के लिए चिह्नित करें',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (lot.status == LotStatus.picked) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE1F5FE),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF81D4FA)),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.local_shipping,
+                      color: Color(0xFF0277BD),
+                      size: 22,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'लॉट पारगमन में है',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0277BD),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'लॉट को पिक कर लिया गया है और यह रीसाइक्लर केंद्र के रास्ते में है।',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF01579B),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: state.isUpdatingLifecycle
+                  ? null
+                  : () => _showDeliveryConfirmationDialog(context, lot),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A1B9A),
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: const Color(0xFFCE93D8),
+                disabledForegroundColor: Colors.white70,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 1,
+              ),
+              icon: state.isUpdatingLifecycle
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.inventory_2_outlined, size: 22),
+              label: Text(
+                state.isUpdatingLifecycle
+                    ? 'अपडेट किया जा रहा है...'
+                    : 'डिलीवर के लिए चिह्नित करें',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (lot.status == LotStatus.delivered) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3E5F5),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFCE93D8)),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.inventory_2, color: Color(0xFF6A1B9A), size: 22),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'लॉट डिलीवर हो चुका है',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF6A1B9A),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'लॉट केंद्र पर प्राप्त हो गया है। कृपया अंतिम सत्यापन के लिए वास्तविक वजन दर्ज करें।',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF4A148C),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'सत्यापन एवं समापन',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF191919),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _actualWeightController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'वास्तविक वजन (KG)',
+                      hintText: 'उदा. 25.5',
+                      prefixIcon: const Icon(Icons.scale_outlined),
+                      errorText: _actualWeightError,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onChanged: (_) {
+                      if (_actualWeightError != null) {
+                        setState(() {
+                          _actualWeightError = null;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: state.isUpdatingLifecycle
+                  ? null
+                  : () => _handleCompleteLot(context, lot),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1B5E20),
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: const Color(0xFF81C784),
+                disabledForegroundColor: Colors.white70,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 1,
+              ),
+              icon: state.isUpdatingLifecycle
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.task_alt, size: 22),
+              label: Text(
+                state.isUpdatingLifecycle
+                    ? 'पूर्ण किया जा रहा है...'
+                    : 'लॉट पूरा करें',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (lot.status == LotStatus.completed) {
+      final weight = lot.actualWeight ?? lot.estimatedWeight;
+      final weightText = weight >= 1.0
+          ? '${weight.toStringAsFixed(weight % 1 == 0 ? 0 : 1)} किलो'
+          : '${(weight * 1000).toStringAsFixed(0)} ग्राम';
+      final displayPrice = lot.finalPrice ?? lot.estimatedPrice;
+      final priceText = displayPrice > 0
+          ? '₹${displayPrice.toStringAsFixed(0)}'
+          : 'मूल्य प्रतीक्षित';
+
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: const Color(0xFFE8F5E9),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFA5D6A7)),
         ),
-        child: const Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                Icon(
-                  Icons.verified,
-                  color: Color(0xFF1B5E20),
-                  size: 22,
-                ),
+                Icon(Icons.check_circle, color: Color(0xFF1B5E20), size: 24),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'यह लॉट आपके द्वारा स्वीकार किया गया है',
+                    'लॉट सफलतापूर्वक पूरा हो गया',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
                       color: Color(0xFF1B5E20),
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 8),
-            Text(
-              'कलेक्टर से संपर्क कर लॉट का पिकअप या डिलीवरी सुनिश्चित करें।',
-              style: TextStyle(
-                fontSize: 13,
-                color: Color(0xFF2E7D32),
-                height: 1.3,
-              ),
+            const SizedBox(height: 12),
+            const Divider(color: Color(0xFFA5D6A7)),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'सत्यापित वास्तविक वजन:',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF2E7D32)),
+                ),
+                Text(
+                  weightText,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1B5E20),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'अंतिम मूल्य:',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF2E7D32)),
+                ),
+                Text(
+                  priceText,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1B5E20),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -719,15 +1081,6 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     } else {
       String statusHindi;
       switch (lot.status) {
-        case LotStatus.picked:
-          statusHindi = 'पिक किया गया';
-          break;
-        case LotStatus.delivered:
-          statusHindi = 'डिलीवर किया गया';
-          break;
-        case LotStatus.completed:
-          statusHindi = 'पूर्ण';
-          break;
         case LotStatus.cancelled:
           statusHindi = 'रद्द';
           break;
@@ -800,7 +1153,10 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: const Text('रद्द करें', style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              'रद्द करें',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(dialogCtx).pop(true),
@@ -819,8 +1175,196 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
 
     if (confirmed == true && context.mounted) {
       context.read<RecyclerLotDetailsBloc>().add(
-            AcceptRecyclerLotEvent(lotId: lot.id),
-          );
+        AcceptRecyclerLotEvent(lotId: lot.id),
+      );
+    }
+  }
+
+  Future<void> _showPickupConfirmationDialog(
+    BuildContext context,
+    LotEntity lot,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.local_shipping_outlined, color: Color(0xFF1565C0)),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'पिकअप की पुष्टि',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'क्या आप इस लॉट को पिकअप के लिए चिह्नित करना चाहते हैं?',
+          style: TextStyle(fontSize: 15, color: Color(0xFF374151), height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text(
+              'रद्द करें',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1565C0),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('पुष्टि करें'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      context.read<RecyclerLotDetailsBloc>().add(
+        UpdateRecyclerLotLifecycleEvent(lotId: lot.id, status: 'picked'),
+      );
+    }
+  }
+
+  Future<void> _showDeliveryConfirmationDialog(
+    BuildContext context,
+    LotEntity lot,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.inventory_2_outlined, color: Color(0xFF6A1B9A)),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'डिलीवरी की पुष्टि',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'क्या आप पुष्टि करते हैं कि लॉट रीसाइक्लर केंद्र पर डिलीवर हो चुका है?',
+          style: TextStyle(fontSize: 15, color: Color(0xFF374151), height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text(
+              'रद्द करें',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6A1B9A),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('पुष्टि करें'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      context.read<RecyclerLotDetailsBloc>().add(
+        UpdateRecyclerLotLifecycleEvent(lotId: lot.id, status: 'delivered'),
+      );
+    }
+  }
+
+  Future<void> _handleCompleteLot(BuildContext context, LotEntity lot) async {
+    final text = _actualWeightController.text.trim();
+    final weight = double.tryParse(text);
+
+    if (weight == null || weight <= 0 || weight.isNaN || weight.isInfinite) {
+      setState(() {
+        _actualWeightError = 'कृपया वैध वास्तविक वजन (किलो) दर्ज करें';
+      });
+      return;
+    }
+
+    setState(() {
+      _actualWeightError = null;
+    });
+
+    final finalPrice = lot.finalPrice ?? lot.estimatedPrice;
+    final priceStr = finalPrice > 0
+        ? '₹${finalPrice.toStringAsFixed(0)}'
+        : 'अनिर्धारित';
+    final weightStr = '${weight.toStringAsFixed(weight % 1 == 0 ? 0 : 1)} किलो';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.task_alt, color: Color(0xFF1B5E20)),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'लॉट समापन की पुष्टि',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'क्या आप इस लॉट को वास्तविक वजन $weightStr एवं अंतिम मूल्य $priceStr पर पूरा करना चाहते हैं?',
+          style: const TextStyle(
+            fontSize: 15,
+            color: Color(0xFF374151),
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text(
+              'रद्द करें',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1B5E20),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('पूरा करें'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      context.read<RecyclerLotDetailsBloc>().add(
+        UpdateRecyclerLotLifecycleEvent(
+          lotId: lot.id,
+          status: 'completed',
+          actualWeight: weight,
+          finalPrice: finalPrice,
+        ),
+      );
     }
   }
 }
@@ -854,10 +1398,7 @@ class _DetailRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF6B7280),
-            ),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
           ),
         ),
       ],

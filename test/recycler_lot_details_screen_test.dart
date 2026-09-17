@@ -22,6 +22,11 @@ class MockRecyclerLotsRepository implements RecyclerLotsRepository {
   int acceptCount = 0;
   String? lastAcceptedLotId;
   double? lastAcceptedPrice;
+  int updateCount = 0;
+  String? lastUpdatedLotId;
+  String? lastUpdatedStatus;
+  double? lastUpdatedActualWeight;
+  double? lastUpdatedFinalPrice;
 
   @override
   Future<List<LotEntity>> getRecyclerLots({
@@ -77,10 +82,46 @@ class MockRecyclerLotsRepository implements RecyclerLotsRepository {
     double? actualWeight,
     double? finalPrice,
   }) async {
+    updateCount++;
+    lastUpdatedLotId = lotId;
+    lastUpdatedStatus = status;
+    lastUpdatedActualWeight = actualWeight;
+    lastUpdatedFinalPrice = finalPrice;
     if (shouldFail) {
       throw Exception(errorMessage);
     }
-    if (lot != null) return lot!;
+    if (lot != null) {
+      LotStatus newStatus;
+      switch (status) {
+        case 'picked':
+          newStatus = LotStatus.picked;
+          break;
+        case 'delivered':
+          newStatus = LotStatus.delivered;
+          break;
+        case 'completed':
+          newStatus = LotStatus.completed;
+          break;
+        default:
+          newStatus = lot!.status;
+      }
+      return LotEntity(
+        id: lot!.id,
+        collectorId: lot!.collectorId,
+        collectorName: lot!.collectorName,
+        collectorPhone: lot!.collectorPhone,
+        materialName: lot!.materialName,
+        estimatedWeight: lot!.estimatedWeight,
+        actualWeight: actualWeight ?? lot!.actualWeight,
+        estimatedPrice: lot!.estimatedPrice,
+        finalPrice: finalPrice ?? lot!.finalPrice,
+        location: lot!.location,
+        status: newStatus,
+        description: lot!.description,
+        schedulePickup: lot!.schedulePickup,
+        createdAt: lot!.createdAt,
+      );
+    }
     throw Exception('Not found');
   }
 }
@@ -124,6 +165,65 @@ void main() {
       state: 'उत्तर प्रदेश',
     ),
     status: LotStatus.accepted,
+    description: 'शुद्ध तांबा वायर 25 किलो',
+    schedulePickup: const {'pickup': true},
+    createdAt: DateTime(2026, 9, 17),
+  );
+
+  final pickedSampleLot = LotEntity(
+    id: 'lot-xyz-999',
+    collectorId: 'collector-456',
+    collectorName: 'राहुल शर्मा',
+    collectorPhone: '9876543210',
+    materialName: 'तांबा वायर',
+    estimatedWeight: 25.0,
+    estimatedPrice: 12500.0,
+    location: const LotLocationEntity(
+      address: 'गली 4, मोहन नगर',
+      city: 'गाजियाबाद',
+      state: 'उत्तर प्रदेश',
+    ),
+    status: LotStatus.picked,
+    description: 'शुद्ध तांबा वायर 25 किलो',
+    schedulePickup: const {'pickup': true},
+    createdAt: DateTime(2026, 9, 17),
+  );
+
+  final deliveredSampleLot = LotEntity(
+    id: 'lot-xyz-999',
+    collectorId: 'collector-456',
+    collectorName: 'राहुल शर्मा',
+    collectorPhone: '9876543210',
+    materialName: 'तांबा वायर',
+    estimatedWeight: 25.0,
+    estimatedPrice: 12500.0,
+    location: const LotLocationEntity(
+      address: 'गली 4, मोहन नगर',
+      city: 'गाजियाबाद',
+      state: 'उत्तर प्रदेश',
+    ),
+    status: LotStatus.delivered,
+    description: 'शुद्ध तांबा वायर 25 किलो',
+    schedulePickup: const {'pickup': true},
+    createdAt: DateTime(2026, 9, 17),
+  );
+
+  final completedSampleLot = LotEntity(
+    id: 'lot-xyz-999',
+    collectorId: 'collector-456',
+    collectorName: 'राहुल शर्मा',
+    collectorPhone: '9876543210',
+    materialName: 'तांबा वायर',
+    estimatedWeight: 25.0,
+    actualWeight: 26.5,
+    estimatedPrice: 12500.0,
+    finalPrice: 12500.0,
+    location: const LotLocationEntity(
+      address: 'गली 4, मोहन नगर',
+      city: 'गाजियाबाद',
+      state: 'उत्तर प्रदेश',
+    ),
+    status: LotStatus.completed,
     description: 'शुद्ध तांबा वायर 25 किलो',
     schedulePickup: const {'pickup': true},
     createdAt: DateTime(2026, 9, 17),
@@ -372,6 +472,233 @@ void main() {
 
         // Accept CTA button should not exist
         expect(find.text('लॉट स्वीकार करें'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '9. When lot status is accepted, displays next action "पिकअप के लिए चिह्नित करें", tap shows confirmation dialog, and confirming dispatches picked update event',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        fakeRepo.lot = acceptedSampleLot;
+        bloc.emit(RecyclerLotDetailsLoaded(acceptedSampleLot));
+        await tester.pumpWidget(buildTestApp());
+        await tester.pumpAndSettle();
+
+        final pickupBtnFinder = find.text('पिकअप के लिए चिह्नित करें');
+        expect(pickupBtnFinder, findsOneWidget);
+
+        await tester.tap(pickupBtnFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.text('पिकअप की पुष्टि'), findsOneWidget);
+        expect(
+          find.text('क्या आप इस लॉट को पिकअप के लिए चिह्नित करना चाहते हैं?'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.widgetWithText(ElevatedButton, 'पुष्टि करें'));
+        await tester.pumpAndSettle();
+
+        expect(fakeRepo.updateCount, 1);
+        expect(fakeRepo.lastUpdatedLotId, 'lot-xyz-999');
+        expect(fakeRepo.lastUpdatedStatus, 'picked');
+      },
+    );
+
+    testWidgets(
+      '10. When lot status is picked, displays transit card and "डिलीवर के लिए चिह्नित करें", tap shows confirmation dialog, and confirming dispatches delivered update event',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        fakeRepo.lot = pickedSampleLot;
+        bloc.emit(RecyclerLotDetailsLoaded(pickedSampleLot));
+        await tester.pumpWidget(buildTestApp());
+        await tester.pumpAndSettle();
+
+        expect(find.text('लॉट पारगमन में है'), findsOneWidget);
+        final deliverBtnFinder = find.text('डिलीवर के लिए चिह्नित करें');
+        expect(deliverBtnFinder, findsOneWidget);
+
+        await tester.tap(deliverBtnFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.text('डिलीवरी की पुष्टि'), findsOneWidget);
+        expect(
+          find.text(
+            'क्या आप पुष्टि करते हैं कि लॉट रीसाइक्लर केंद्र पर डिलीवर हो चुका है?',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.widgetWithText(ElevatedButton, 'पुष्टि करें'));
+        await tester.pumpAndSettle();
+
+        expect(fakeRepo.updateCount, 1);
+        expect(fakeRepo.lastUpdatedLotId, 'lot-xyz-999');
+        expect(fakeRepo.lastUpdatedStatus, 'delivered');
+      },
+    );
+
+    testWidgets(
+      '11. When lot status is delivered, displays weight input and empty/invalid input prevents completion with inline error',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        fakeRepo.lot = deliveredSampleLot;
+        bloc.emit(RecyclerLotDetailsLoaded(deliveredSampleLot));
+        await tester.pumpWidget(buildTestApp());
+        await tester.pumpAndSettle();
+
+        expect(find.text('लॉट डिलीवर हो चुका है'), findsOneWidget);
+        expect(find.text('वास्तविक वजन (KG)'), findsOneWidget);
+        final completeBtnFinder = find.text('लॉट पूरा करें');
+        expect(completeBtnFinder, findsOneWidget);
+
+        // Tap complete without entering weight
+        await tester.tap(completeBtnFinder);
+        await tester.pumpAndSettle();
+
+        // Confirmation dialog must NOT appear
+        expect(find.text('लॉट समापन की पुष्टि'), findsNothing);
+        expect(fakeRepo.updateCount, 0);
+        expect(
+          find.text('कृपया वैध वास्तविक वजन (किलो) दर्ज करें'),
+          findsOneWidget,
+        );
+
+        // Enter invalid 0 or negative weight
+        final inputFinder = find.byType(TextField);
+        await tester.enterText(inputFinder, '-10');
+        await tester.tap(completeBtnFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.text('लॉट समापन की पुष्टि'), findsNothing);
+        expect(fakeRepo.updateCount, 0);
+        expect(
+          find.text('कृपया वैध वास्तविक वजन (किलो) दर्ज करें'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      '12. When lot status is delivered, entering valid weight opens confirmation dialog and confirming dispatches completed event with actualWeight and finalPrice',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        fakeRepo.lot = deliveredSampleLot;
+        bloc.emit(RecyclerLotDetailsLoaded(deliveredSampleLot));
+        await tester.pumpWidget(buildTestApp());
+        await tester.pumpAndSettle();
+
+        final inputFinder = find.byType(TextField);
+        await tester.enterText(inputFinder, '26.5');
+        await tester.pump();
+
+        final completeBtnFinder = find.text('लॉट पूरा करें');
+        await tester.tap(completeBtnFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.text('लॉट समापन की पुष्टि'), findsOneWidget);
+        expect(find.textContaining('26.5 किलो'), findsOneWidget);
+        expect(find.textContaining('अंतिम मूल्य ₹12500'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(ElevatedButton, 'पूरा करें'));
+        await tester.pumpAndSettle();
+
+        expect(fakeRepo.updateCount, 1);
+        expect(fakeRepo.lastUpdatedLotId, 'lot-xyz-999');
+        expect(fakeRepo.lastUpdatedStatus, 'completed');
+        expect(fakeRepo.lastUpdatedActualWeight, 26.5);
+        expect(fakeRepo.lastUpdatedFinalPrice, 12500.0);
+      },
+    );
+
+    testWidgets(
+      '13. When lot status is completed, displays completion summary card, verified weight & final price, and hides all lifecycle CTA buttons',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        bloc.emit(RecyclerLotDetailsLoaded(completedSampleLot));
+        await tester.pumpWidget(buildTestApp());
+        await tester.pumpAndSettle();
+
+        expect(find.text('पूरा हुआ'), findsOneWidget);
+        expect(find.text('लॉट सफलतापूर्वक पूरा हो गया'), findsOneWidget);
+        expect(find.text('सत्यापित वास्तविक वजन:'), findsOneWidget);
+        expect(find.text('26.5 किलो'), findsWidgets);
+        expect(find.text('अंतिम मूल्य:'), findsOneWidget);
+        expect(find.text('₹12500'), findsWidgets);
+
+        // All CTA buttons hidden
+        expect(find.text('लॉट स्वीकार करें'), findsNothing);
+        expect(find.text('पिकअप के लिए चिह्नित करें'), findsNothing);
+        expect(find.text('डिलीवर के लिए चिह्नित करें'), findsNothing);
+        expect(find.text('लॉट पूरा करें'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '14. When isUpdatingLifecycle is true, action button displays loading indicator and is disabled',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        bloc.emit(
+          RecyclerLotDetailsLoaded(
+            acceptedSampleLot,
+            isUpdatingLifecycle: true,
+          ),
+        );
+        await tester.pumpWidget(buildTestApp());
+        await tester.pump();
+
+        expect(find.text('अपडेट किया जा रहा है...'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      '15. Floating SnackBar appears on actionErrorMessage while preserving current lot details',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        bloc.emit(RecyclerLotDetailsLoaded(acceptedSampleLot));
+        await tester.pumpWidget(buildTestApp());
+        await tester.pumpAndSettle();
+
+        bloc.emit(
+          RecyclerLotDetailsLoaded(
+            acceptedSampleLot,
+            actionErrorMessage: 'सर्वर त्रुटि: पुनः प्रयास करें',
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('सर्वर त्रुटि: पुनः प्रयास करें'), findsOneWidget);
+        expect(find.text('तांबा वायर'), findsOneWidget);
+        expect(find.text('स्वीकृत'), findsOneWidget);
       },
     );
   });
