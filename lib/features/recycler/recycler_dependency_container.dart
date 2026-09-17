@@ -5,6 +5,7 @@ import '../../domain/repositories/recycler_lots_repository.dart';
 import '../../domain/usecases/recycler/accept_recycler_lot_usecase.dart';
 import '../../domain/usecases/recycler/get_recycler_lot_details_usecase.dart';
 import '../../domain/usecases/recycler/get_recycler_lots_usecase.dart';
+import '../../domain/usecases/recycler/update_lot_lifecycle_usecase.dart';
 import 'presentation/bloc/lot_details/recycler_lot_details_bloc.dart';
 import 'presentation/bloc/recycler_dashboard_bloc.dart';
 
@@ -13,6 +14,7 @@ class RecyclerDependencyContainer {
   late final GetRecyclerLotsUseCase getRecyclerLotsUseCase;
   late final GetRecyclerLotDetailsUseCase getRecyclerLotDetailsUseCase;
   late final AcceptRecyclerLotUseCase acceptRecyclerLotUseCase;
+  late final UpdateLotLifecycleUseCase updateLotLifecycleUseCase;
 
   RecyclerDependencyContainer({required this.recyclerLotsRepository}) {
     getRecyclerLotsUseCase = GetRecyclerLotsUseCase(recyclerLotsRepository);
@@ -20,6 +22,9 @@ class RecyclerDependencyContainer {
       recyclerLotsRepository,
     );
     acceptRecyclerLotUseCase = AcceptRecyclerLotUseCase(recyclerLotsRepository);
+    updateLotLifecycleUseCase = UpdateLotLifecycleUseCase(
+      recyclerLotsRepository,
+    );
   }
 
   factory RecyclerDependencyContainer.fromApiClient(ApiClient apiClient) {
@@ -37,5 +42,6 @@ class RecyclerDependencyContainer {
       RecyclerLotDetailsBloc(
         getRecyclerLotDetailsUseCase: getRecyclerLotDetailsUseCase,
         acceptRecyclerLotUseCase: acceptRecyclerLotUseCase,
+        updateLotLifecycleUseCase: updateLotLifecycleUseCase,
       );
 }

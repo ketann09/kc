@@ -34,3 +34,20 @@ class AcceptRecyclerLotEvent extends RecyclerLotDetailsEvent {
   @override
   List<Object?> get props => [lotId, price];
 }
+
+class UpdateRecyclerLotLifecycleEvent extends RecyclerLotDetailsEvent {
+  final String lotId;
+  final String status;
+  final double? actualWeight;
+  final double? finalPrice;
+
+  const UpdateRecyclerLotLifecycleEvent({
+    required this.lotId,
+    required this.status,
+    this.actualWeight,
+    this.finalPrice,
+  });
+
+  @override
+  List<Object?> get props => [lotId, status, actualWeight, finalPrice];
+}

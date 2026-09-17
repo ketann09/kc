@@ -20,12 +20,14 @@ class RecyclerLotDetailsLoading extends RecyclerLotDetailsState {
 class RecyclerLotDetailsLoaded extends RecyclerLotDetailsState {
   final LotEntity lot;
   final bool isAccepting;
+  final bool isUpdatingLifecycle;
   final String? actionSuccessMessage;
   final String? actionErrorMessage;
 
   const RecyclerLotDetailsLoaded(
     this.lot, {
     this.isAccepting = false,
+    this.isUpdatingLifecycle = false,
     this.actionSuccessMessage,
     this.actionErrorMessage,
   });
@@ -33,12 +35,14 @@ class RecyclerLotDetailsLoaded extends RecyclerLotDetailsState {
   RecyclerLotDetailsLoaded copyWith({
     LotEntity? lot,
     bool? isAccepting,
+    bool? isUpdatingLifecycle,
     String? actionSuccessMessage,
     String? actionErrorMessage,
   }) {
     return RecyclerLotDetailsLoaded(
       lot ?? this.lot,
       isAccepting: isAccepting ?? this.isAccepting,
+      isUpdatingLifecycle: isUpdatingLifecycle ?? this.isUpdatingLifecycle,
       actionSuccessMessage: actionSuccessMessage,
       actionErrorMessage: actionErrorMessage,
     );
@@ -48,6 +52,7 @@ class RecyclerLotDetailsLoaded extends RecyclerLotDetailsState {
   List<Object?> get props => [
     lot,
     isAccepting,
+    isUpdatingLifecycle,
     actionSuccessMessage,
     actionErrorMessage,
   ];

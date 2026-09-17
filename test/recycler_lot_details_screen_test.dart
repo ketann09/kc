@@ -7,6 +7,7 @@ import 'package:kabadiwala_connect/domain/entities/lot_entity.dart';
 import 'package:kabadiwala_connect/domain/repositories/recycler_lots_repository.dart';
 import 'package:kabadiwala_connect/domain/usecases/recycler/accept_recycler_lot_usecase.dart';
 import 'package:kabadiwala_connect/domain/usecases/recycler/get_recycler_lot_details_usecase.dart';
+import 'package:kabadiwala_connect/domain/usecases/recycler/update_lot_lifecycle_usecase.dart';
 import 'package:kabadiwala_connect/features/recycler/presentation/bloc/lot_details/recycler_lot_details_bloc.dart';
 import 'package:kabadiwala_connect/features/recycler/presentation/bloc/lot_details/recycler_lot_details_state.dart';
 import 'package:kabadiwala_connect/features/recycler/recycler_lot_details_screen.dart';
@@ -136,6 +137,7 @@ void main() {
     bloc = RecyclerLotDetailsBloc(
       getRecyclerLotDetailsUseCase: useCase,
       acceptRecyclerLotUseCase: acceptUseCase,
+      updateLotLifecycleUseCase: UpdateLotLifecycleUseCase(fakeRepo),
     );
   });
 
