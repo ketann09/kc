@@ -15,6 +15,8 @@ import '../../features/recycler/recycler_lot_details_screen.dart';
 import '../../domain/entities/lot_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../features/authentication/presentation/auth_gate.dart';
+import '../../features/collector/presentation/screens/collector_lot_details_screen.dart';
+import '../../features/collector/presentation/screens/collector_transactions_screen.dart';
 import '../../features/transactions/presentation/screens/transaction_details_screen.dart';
 
 class AppRouter {
@@ -55,6 +57,24 @@ class AppRouter {
       case '/collector-dashboard':
         return MaterialPageRoute(
           builder: (_) => const CollectorDashboardScreen(),
+        );
+
+      case '/collector-transactions':
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const CollectorTransactionsScreen(),
+        );
+
+      case '/collector-lot-details':
+        final args = settings.arguments;
+        final lotId = args is String
+            ? args
+            : (args is Map ? args['lotId'] as String? ?? '' : '');
+        final lot = args is Map ? args['lot'] as LotEntity? : null;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) =>
+              CollectorLotDetailsScreen(lotId: lotId, initialLot: lot),
         );
 
       case '/new-lot':

@@ -459,7 +459,6 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
         statusBgColor = const Color(0xFFFFEBEE);
         break;
       case TransactionStatus.initiated:
-      default:
         statusColor = const Color(0xFF1565C0);
         statusBgColor = const Color(0xFFE3F2FD);
     }
@@ -852,7 +851,6 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
         paymentFg = const Color(0xFFC62828);
         break;
       case PaymentStatus.pending:
-      default:
         paymentBg = const Color(0xFFFFF3E0);
         paymentFg = const Color(0xFFE65100);
     }

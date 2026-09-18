@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class CollectorDashboardScreen extends StatelessWidget {
   const CollectorDashboardScreen({super.key});
 
-  static const List<_ScrapRate> rates = [
+  static const List<_ScrapRate> _rates = [
     _ScrapRate(
       name: 'पीसीबी',
       subtitle: 'प्रति किलोग्राम',
@@ -62,6 +62,17 @@ class CollectorDashboardScreen extends StatelessWidget {
 
                   IconButton(
                     onPressed: () {
+                      Navigator.pushNamed(context, '/collector-transactions');
+                    },
+                    tooltip: 'मेरी कमाई और लेन-देन',
+                    icon: const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: Color(0xFF147A65),
+                      size: 24,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('आज के भाव अपडेट किए गए हैं'),
@@ -92,13 +103,48 @@ class CollectorDashboardScreen extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.only(bottom: 20),
-                  itemCount: rates.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemCount: _rates.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    return _RateCard(rate: rates[index]);
+                    return _RateCard(rate: _rates[index]);
                   },
                 ),
               ),
+
+              // Earnings & Transactions CTA
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/collector-transactions');
+                  },
+                  icon: const Icon(
+                    Icons.receipt_long_outlined,
+                    color: Color(0xFF147A65),
+                    size: 20,
+                  ),
+                  label: const Text(
+                    'मेरी कमाई और लेन-देन',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF147A65),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(
+                      color: Color(0xFF147A65),
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
 
               // New lot CTA
               SizedBox(
