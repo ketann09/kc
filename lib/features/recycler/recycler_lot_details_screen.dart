@@ -1075,6 +1075,37 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                key: const Key('create_or_view_transaction_button'),
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/transaction-details',
+                    arguments: {
+                      'lotId': lot.id,
+                      'lot': lot,
+                      'isRecycler': true,
+                    },
+                  );
+                },
+                icon: const Icon(Icons.receipt_long),
+                label: const Text(
+                  'लेन-देन विवरण / प्रबंधन',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B5E20),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       );

@@ -12,7 +12,10 @@ import '../../features/collector/accept_offer_screen.dart';
 import '../../features/recycler/incoming_lot_screen.dart';
 import '../../features/recycler/recycler_dashboard_screen.dart';
 import '../../features/recycler/recycler_lot_details_screen.dart';
+import '../../domain/entities/lot_entity.dart';
+import '../../domain/entities/transaction_entity.dart';
 import '../../features/authentication/presentation/auth_gate.dart';
+import '../../features/transactions/presentation/screens/transaction_details_screen.dart';
 
 class AppRouter {
   AppRouter._();
@@ -110,6 +113,40 @@ class AppRouter {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const IncomingLotScreen(),
+        );
+
+      case '/transaction-details':
+        final args = settings.arguments;
+        String? transactionId;
+        TransactionEntity? initialTransaction;
+        String? lotId;
+        LotEntity? lot;
+        bool isRecycler = true;
+
+        if (args is String) {
+          transactionId = args;
+        } else if (args is TransactionEntity) {
+          initialTransaction = args;
+          transactionId = args.id;
+        } else if (args is Map) {
+          transactionId = args['transactionId'] as String?;
+          initialTransaction = args['initialTransaction'] as TransactionEntity?;
+          lotId = args['lotId'] as String?;
+          lot = args['lot'] as LotEntity?;
+          if (args['isRecycler'] is bool) {
+            isRecycler = args['isRecycler'] as bool;
+          }
+        }
+
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => TransactionDetailsScreen(
+            transactionId: transactionId,
+            initialTransaction: initialTransaction,
+            lotId: lotId,
+            lot: lot,
+            isRecycler: isRecycler,
+          ),
         );
 
       default:
