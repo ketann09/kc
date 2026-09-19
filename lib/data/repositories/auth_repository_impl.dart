@@ -33,10 +33,15 @@ class AuthRepositoryImpl implements AuthRepository {
       refreshToken: response.refreshToken,
     );
 
+    final session = response.toEntity();
+
+    // Cache user profile for offline session resilience
+    await tokenStorage.saveUser(session.user);
+
     // Update ApiClient with active token
     apiClient.setAccessToken(response.accessToken);
 
-    return response.toEntity();
+    return session;
   }
 
   @override
@@ -64,7 +69,9 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserEntity> getCurrentUser() async {
-    return await remoteDataSource.getCurrentUser();
+    final user = await remoteDataSource.getCurrentUser();
+    await tokenStorage.saveUser(user);
+    return user;
   }
 
   @override
@@ -97,6 +104,7 @@ class AuthRepositoryImpl implements AuthRepository {
       // Ignore network errors on logout to allow local session cleanup
     } finally {
       await tokenStorage.clearTokens();
+      await tokenStorage.clearUser();
       apiClient.clearAccessToken();
     }
   }
@@ -114,30 +122,59 @@ class AuthRepositoryImpl implements AuthRepository {
 
     try {
       final user = await remoteDataSource.getCurrentUser();
+      // Refresh local cache with latest authoritative user profile from backend
+      await tokenStorage.saveUser(user);
       return AuthSessionEntity(
         user: user,
         accessToken: accessToken,
         refreshToken: refreshToken,
       );
     } on ApiException catch (e) {
-      if (e.type == ApiExceptionType.unauthorized || e.statusCode == 401) {
+      if (e.isAuthError) {
+        // Genuine authentication failure (401/403): attempt token refresh
         try {
           final newAccessToken = await refreshAccessToken();
-          final updatedRefreshToken = (await tokenStorage.getRefreshToken()) ?? refreshToken;
+          final updatedRefreshToken =
+              (await tokenStorage.getRefreshToken()) ?? refreshToken;
           final user = await remoteDataSource.getCurrentUser();
+          await tokenStorage.saveUser(user);
           return AuthSessionEntity(
             user: user,
             accessToken: newAccessToken,
             refreshToken: updatedRefreshToken,
           );
         } catch (_) {
+          // Token refresh failed: purge stored credentials and cached profile
           await tokenStorage.clearTokens();
+          await tokenStorage.clearUser();
           apiClient.clearAccessToken();
           return null;
         }
+      } else if (e.isNetworkError || e.isTimeout) {
+        // Network or timeout failure during startup:
+        // Do NOT discard valid authentication credentials. Fallback to cached identity.
+        final cachedUser = await tokenStorage.getUser();
+        if (cachedUser != null) {
+          return AuthSessionEntity(
+            user: cachedUser,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+          );
+        }
+        return null;
       }
       return null;
     } catch (_) {
+      // Non-ApiException failure (e.g. unexpected socket or decode failure):
+      // Safely attempt offline session restoration from cached profile.
+      final cachedUser = await tokenStorage.getUser();
+      if (cachedUser != null) {
+        return AuthSessionEntity(
+          user: cachedUser,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
+      }
       return null;
     }
   }
