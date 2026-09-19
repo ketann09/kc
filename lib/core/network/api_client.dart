@@ -5,27 +5,33 @@ import 'package:dio/dio.dart';
 import 'api_config.dart';
 import 'api_exception.dart';
 
+typedef NetworkTelemetryCallback = void Function(
+  bool isSuccess, {
+  ApiException? exception,
+});
+
 class ApiClient {
   final Dio _dio;
   String? _accessToken;
+  final List<NetworkTelemetryCallback> _telemetryListeners = [];
 
-  ApiClient({
-    Dio? dio,
-    String? baseUrl,
-  }) : _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? (ApiConfig.isConfigured ? ApiConfig.baseUrl : ''),
-                connectTimeout: ApiConfig.connectTimeout,
-                sendTimeout: ApiConfig.sendTimeout,
-                receiveTimeout: ApiConfig.receiveTimeout,
-                headers: {
-                  Headers.acceptHeader: 'application/json',
-                  Headers.contentTypeHeader: 'application/json',
-                },
-                responseType: ResponseType.json,
-              ),
-            ) {
+  ApiClient({Dio? dio, String? baseUrl})
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl:
+                  baseUrl ?? (ApiConfig.isConfigured ? ApiConfig.baseUrl : ''),
+              connectTimeout: ApiConfig.connectTimeout,
+              sendTimeout: ApiConfig.sendTimeout,
+              receiveTimeout: ApiConfig.receiveTimeout,
+              headers: {
+                Headers.acceptHeader: 'application/json',
+                Headers.contentTypeHeader: 'application/json',
+              },
+              responseType: ResponseType.json,
+            ),
+          ) {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
@@ -53,7 +59,30 @@ class ApiClient {
   String? get accessToken => _accessToken;
 
   /// Check whether an active access token is stored
-  bool get hasAccessToken => _accessToken != null && _accessToken!.trim().isNotEmpty;
+  bool get hasAccessToken =>
+      _accessToken != null && _accessToken!.trim().isNotEmpty;
+
+  /// Register a listener to observe real-time network request outcomes
+  void addTelemetryListener(NetworkTelemetryCallback listener) {
+    _telemetryListeners.add(listener);
+  }
+
+  /// Remove a registered telemetry listener
+  void removeTelemetryListener(NetworkTelemetryCallback listener) {
+    _telemetryListeners.remove(listener);
+  }
+
+  void _notifyTelemetry({required bool isSuccess, ApiException? exception}) {
+    for (final listener in List<NetworkTelemetryCallback>.from(
+      _telemetryListeners,
+    )) {
+      try {
+        listener(isSuccess, exception: exception);
+      } catch (_) {
+        // Prevent telemetry listener failures from affecting the caller
+      }
+    }
+  }
 
   /// Set or update the access token for subsequent requests
   void setAccessToken(String token) {
@@ -82,16 +111,22 @@ class ApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      return await _dio.get<T>(
+      final response = await _dio.get<T>(
         _normalizePath(path),
         queryParameters: queryParameters,
         options: options,
         cancelToken: cancelToken,
       );
+      _notifyTelemetry(isSuccess: true);
+      return response;
     } on DioException catch (e) {
-      throw _handleDioException(e);
+      final apiException = _handleDioException(e);
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     } catch (e) {
-      throw ApiException.unknown(message: e.toString());
+      final apiException = ApiException.unknown(message: e.toString());
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     }
   }
 
@@ -104,17 +139,23 @@ class ApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      return await _dio.post<T>(
+      final response = await _dio.post<T>(
         _normalizePath(path),
         data: data,
         queryParameters: queryParameters,
         options: options,
         cancelToken: cancelToken,
       );
+      _notifyTelemetry(isSuccess: true);
+      return response;
     } on DioException catch (e) {
-      throw _handleDioException(e);
+      final apiException = _handleDioException(e);
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     } catch (e) {
-      throw ApiException.unknown(message: e.toString());
+      final apiException = ApiException.unknown(message: e.toString());
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     }
   }
 
@@ -127,17 +168,23 @@ class ApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      return await _dio.put<T>(
+      final response = await _dio.put<T>(
         _normalizePath(path),
         data: data,
         queryParameters: queryParameters,
         options: options,
         cancelToken: cancelToken,
       );
+      _notifyTelemetry(isSuccess: true);
+      return response;
     } on DioException catch (e) {
-      throw _handleDioException(e);
+      final apiException = _handleDioException(e);
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     } catch (e) {
-      throw ApiException.unknown(message: e.toString());
+      final apiException = ApiException.unknown(message: e.toString());
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     }
   }
 
@@ -150,17 +197,23 @@ class ApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      return await _dio.patch<T>(
+      final response = await _dio.patch<T>(
         _normalizePath(path),
         data: data,
         queryParameters: queryParameters,
         options: options,
         cancelToken: cancelToken,
       );
+      _notifyTelemetry(isSuccess: true);
+      return response;
     } on DioException catch (e) {
-      throw _handleDioException(e);
+      final apiException = _handleDioException(e);
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     } catch (e) {
-      throw ApiException.unknown(message: e.toString());
+      final apiException = ApiException.unknown(message: e.toString());
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     }
   }
 
@@ -173,17 +226,23 @@ class ApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      return await _dio.delete<T>(
+      final response = await _dio.delete<T>(
         _normalizePath(path),
         data: data,
         queryParameters: queryParameters,
         options: options,
         cancelToken: cancelToken,
       );
+      _notifyTelemetry(isSuccess: true);
+      return response;
     } on DioException catch (e) {
-      throw _handleDioException(e);
+      final apiException = _handleDioException(e);
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     } catch (e) {
-      throw ApiException.unknown(message: e.toString());
+      final apiException = ApiException.unknown(message: e.toString());
+      _notifyTelemetry(isSuccess: false, exception: apiException);
+      throw apiException;
     }
   }
 
@@ -194,14 +253,10 @@ class ApiClient {
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.transformTimeout:
-        return ApiException.timeout(
-          message: error.message,
-        );
+        return ApiException.timeout();
 
       case DioExceptionType.connectionError:
-        return ApiException.network(
-          message: error.message,
-        );
+        return ApiException.network();
 
       case DioExceptionType.badCertificate:
         return ApiException.network(
@@ -218,10 +273,7 @@ class ApiClient {
         }
 
         if (statusCode == 401 || statusCode == 403) {
-          return ApiException.unauthorized(
-            message: serverMessage,
-            data: data,
-          );
+          return ApiException.unauthorized(message: serverMessage, data: data);
         }
 
         if (statusCode != null && statusCode >= 500) {

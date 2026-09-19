@@ -67,6 +67,30 @@ class ApiException implements Exception {
     );
   }
 
+  /// Whether this exception indicates a client connectivity failure (no network/socket error).
+  bool get isNetworkError => type == ApiExceptionType.network;
+
+  /// Whether this exception was caused by a request/connection timeout.
+  bool get isTimeout => type == ApiExceptionType.timeout;
+
+  /// Whether this exception was caused by a 5xx backend failure.
+  bool get isServerError =>
+      type == ApiExceptionType.server ||
+      (statusCode != null && statusCode! >= 500);
+
+  /// Whether this exception represents an authentication or authorization failure (401/403).
+  bool get isAuthError =>
+      type == ApiExceptionType.unauthorized ||
+      statusCode == 401 ||
+      statusCode == 403;
+
+  /// Whether this exception was caused by a 4xx client/validation error (other than 401/403).
+  bool get isBusinessError =>
+      statusCode != null &&
+      statusCode! >= 400 &&
+      statusCode! < 500 &&
+      !isAuthError;
+
   @override
   String toString() {
     return 'ApiException(type: $type, statusCode: $statusCode, message: $message)';

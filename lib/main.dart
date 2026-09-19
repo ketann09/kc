@@ -4,9 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/bloc/accessibility/accessibility_bloc.dart';
 import 'core/bloc/accessibility/accessibility_event.dart';
 import 'core/bloc/accessibility/accessibility_state.dart';
+import 'core/bloc/network/network_cubit.dart';
 import 'core/localization/app_localizations.dart';
 import 'core/network/api_client.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/connectivity_service.dart';
 import 'core/services/tts_service.dart';
 import 'core/storage/accessibility_preferences_storage.dart';
 import 'core/storage/auth_token_storage.dart';
@@ -27,12 +29,16 @@ class KabadiwalaConnectApp extends StatefulWidget {
   final AuthRepository? authRepository;
   final AccessibilityPreferencesStorage? accessibilityStorage;
   final TtsService? ttsService;
+  final ConnectivityService? connectivityService;
+  final NetworkCubit? networkCubit;
 
   const KabadiwalaConnectApp({
     super.key,
     this.authRepository,
     this.accessibilityStorage,
     this.ttsService,
+    this.connectivityService,
+    this.networkCubit,
   });
 
   @override
@@ -48,6 +54,8 @@ class _KabadiwalaConnectAppState extends State<KabadiwalaConnectApp> {
   late final AccessibilityPreferencesStorage _accessibilityStorage;
   late final TtsService _ttsService;
   late final AccessibilityBloc _accessibilityBloc;
+  late final ConnectivityService _connectivityService;
+  late final NetworkCubit _networkCubit;
 
   @override
   void initState() {
@@ -71,12 +79,19 @@ class _KabadiwalaConnectAppState extends State<KabadiwalaConnectApp> {
       storage: _accessibilityStorage,
       ttsService: _ttsService,
     )..add(const AccessibilityInitialized());
+
+    _connectivityService = widget.connectivityService ??
+        DefaultConnectivityService(apiClient: _apiClient);
+    _networkCubit = widget.networkCubit ??
+        NetworkCubit(connectivityService: _connectivityService);
   }
 
   @override
   void dispose() {
     _authBloc.close();
     _accessibilityBloc.close();
+    _networkCubit.close();
+    _connectivityService.dispose();
     super.dispose();
   }
 
@@ -89,11 +104,14 @@ class _KabadiwalaConnectAppState extends State<KabadiwalaConnectApp> {
         RepositoryProvider<AccessibilityPreferencesStorage>.value(
             value: _accessibilityStorage),
         RepositoryProvider<TtsService>.value(value: _ttsService),
+        RepositoryProvider<ConnectivityService>.value(
+            value: _connectivityService),
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: _authBloc),
           BlocProvider.value(value: _accessibilityBloc),
+          BlocProvider.value(value: _networkCubit),
         ],
         child: BlocBuilder<AccessibilityBloc, AccessibilityState>(
           builder: (context, accessState) {
