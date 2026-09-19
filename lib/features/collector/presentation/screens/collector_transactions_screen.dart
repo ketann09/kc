@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/storage/read_cache_storage.dart';
 import '../../../../core/widgets/language_audio_sheet.dart';
+import '../../../../core/widgets/offline_stale_banner.dart';
 import '../../../../core/widgets/speaker_button.dart';
 import '../../../../domain/entities/transaction_entity.dart';
 import '../../../transactions/presentation/screens/transaction_details_screen.dart';
@@ -37,7 +39,20 @@ class _CollectorTransactionsScreenState
       }
     } else {
       _isLocalBloc = true;
-      final container = CollectorDependencyContainer.fromApiClient(ApiClient());
+      ApiClient apiClient;
+      try {
+        apiClient = context.read<ApiClient>();
+      } catch (_) {
+        apiClient = ApiClient();
+      }
+      ReadCacheStorage? readCache;
+      try {
+        readCache = context.read<ReadCacheStorage>();
+      } catch (_) {}
+      final container = CollectorDependencyContainer.fromApiClient(
+        apiClient,
+        readCacheStorage: readCache,
+      );
       _bloc = container.createCollectorTransactionsBloc();
       _bloc.add(const FetchCollectorTransactionsEvent());
     }
@@ -100,9 +115,11 @@ class _CollectorTransactionsScreenState
             BlocBuilder<CollectorTransactionsBloc, CollectorTransactionsState>(
               builder: (context, state) {
                 if (state is CollectorTransactionsLoaded) {
+                  final isOffline = state.isOffline;
+                  final prefix = isOffline ? '${l10n.offlineStaleNotice}। ' : '';
                   return SpeakerButton(
                     textToSpeak:
-                        '${l10n.myEarningsAndTransactions}. ${l10n.totalEarnings}: ₹${state.totalEarnings.toStringAsFixed(0)}. ${l10n.paymentPending}: ₹${state.pendingEarnings.toStringAsFixed(0)}.',
+                        '$prefix${l10n.myEarningsAndTransactions}. ${l10n.totalEarnings}: ₹${state.totalEarnings.toStringAsFixed(0)}. ${l10n.paymentPending}: ₹${state.pendingEarnings.toStringAsFixed(0)}.',
                   );
                 }
                 return const SizedBox.shrink();
@@ -227,6 +244,14 @@ class _CollectorTransactionsScreenState
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         children: [
+          if (state.isOffline)
+            OfflineStaleBanner(
+              cachedAt: state.cachedAt,
+              isRefreshing: state.isRefreshing,
+              onRefresh: () => _bloc.add(
+                const FetchCollectorTransactionsEvent(refresh: true),
+              ),
+            ),
           _buildEarningsSummary(state),
           const SizedBox(height: 20),
           _buildFilterChips(state),

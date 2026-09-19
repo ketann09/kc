@@ -1,4 +1,5 @@
 import '../../core/network/api_client.dart';
+import '../../core/storage/read_cache_storage.dart';
 import '../../data/datasources/remote/lots_remote_data_source.dart';
 import '../../data/datasources/remote/transactions_remote_data_source.dart';
 import '../../data/repositories/recycler_lots_repository_impl.dart';
@@ -20,6 +21,7 @@ import 'presentation/bloc/recycler_dashboard_bloc.dart';
 class RecyclerDependencyContainer {
   final RecyclerLotsRepository recyclerLotsRepository;
   final TransactionsRepository? transactionsRepository;
+  final ReadCacheStorage? readCacheStorage;
 
   late final GetRecyclerLotsUseCase getRecyclerLotsUseCase;
   late final GetRecyclerLotDetailsUseCase getRecyclerLotDetailsUseCase;
@@ -34,6 +36,7 @@ class RecyclerDependencyContainer {
   RecyclerDependencyContainer({
     required this.recyclerLotsRepository,
     this.transactionsRepository,
+    this.readCacheStorage,
   }) {
     getRecyclerLotsUseCase = GetRecyclerLotsUseCase(recyclerLotsRepository);
     getRecyclerLotDetailsUseCase = GetRecyclerLotDetailsUseCase(
@@ -60,7 +63,10 @@ class RecyclerDependencyContainer {
     }
   }
 
-  factory RecyclerDependencyContainer.fromApiClient(ApiClient apiClient) {
+  factory RecyclerDependencyContainer.fromApiClient(
+    ApiClient apiClient, {
+    ReadCacheStorage? readCacheStorage,
+  }) {
     return RecyclerDependencyContainer(
       recyclerLotsRepository: RecyclerLotsRepositoryImpl(
         remoteDataSource: LotsRemoteDataSourceImpl(apiClient: apiClient),
@@ -70,11 +76,16 @@ class RecyclerDependencyContainer {
           apiClient: apiClient,
         ),
       ),
+      readCacheStorage: readCacheStorage ?? SharedPreferencesReadCacheStorage(),
     );
   }
 
-  RecyclerDashboardBloc createRecyclerDashboardBloc() =>
-      RecyclerDashboardBloc(getRecyclerLotsUseCase: getRecyclerLotsUseCase);
+  RecyclerDashboardBloc createRecyclerDashboardBloc({
+    ReadCacheStorage? readCache,
+  }) => RecyclerDashboardBloc(
+    getRecyclerLotsUseCase: getRecyclerLotsUseCase,
+    readCacheStorage: readCache ?? readCacheStorage,
+  );
 
   RecyclerLotDetailsBloc createRecyclerLotDetailsBloc() =>
       RecyclerLotDetailsBloc(

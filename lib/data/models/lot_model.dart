@@ -104,6 +104,21 @@ class LotMLPredictionModel extends LotMLPredictionEntity {
       unit: json['unit']?.toString(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (predictedCategory != null) 'predictedCategory': predictedCategory,
+      if (confidenceScore != null) 'confidenceScore': confidenceScore,
+      if (predictedPrice != null) 'predictedPrice': predictedPrice,
+      if (minPrice != null || maxPrice != null)
+        'priceRange': {
+          if (minPrice != null) 'min': minPrice,
+          if (maxPrice != null) 'max': maxPrice,
+        },
+      if (matchLevel != null) 'matchLevel': matchLevel,
+      if (unit != null) 'unit': unit,
+    };
+  }
 }
 
 class LotModel extends LotEntity {
@@ -146,38 +161,38 @@ class LotModel extends LotEntity {
     }
 
     String cId = '';
-    String? cName;
-    String? cPhone;
+    String? cName = lotMap['collectorName']?.toString();
+    String? cPhone = lotMap['collectorPhone']?.toString();
     final colField = lotMap['collectorId'];
     if (colField is Map) {
       final colMap = Map<String, dynamic>.from(colField);
       cId = colMap['_id']?.toString() ?? colMap['id']?.toString() ?? '';
-      cName = colMap['fullName']?.toString();
-      cPhone = colMap['phoneNumber']?.toString();
+      cName = colMap['fullName']?.toString() ?? cName;
+      cPhone = colMap['phoneNumber']?.toString() ?? cPhone;
     } else if (colField != null) {
       cId = colField.toString();
     }
 
     String? rId;
-    String? rName;
-    String? rPhone;
+    String? rName = lotMap['recyclerName']?.toString();
+    String? rPhone = lotMap['recyclerPhone']?.toString();
     final recField = lotMap['recyclerId'];
     if (recField is Map) {
       final recMap = Map<String, dynamic>.from(recField);
       rId = recMap['_id']?.toString() ?? recMap['id']?.toString();
-      rName = recMap['fullName']?.toString();
-      rPhone = recMap['phoneNumber']?.toString();
+      rName = recMap['fullName']?.toString() ?? rName;
+      rPhone = recMap['phoneNumber']?.toString() ?? rPhone;
     } else if (recField != null) {
       rId = recField.toString();
     }
 
     String? mId;
-    String? mName;
+    String? mName = lotMap['materialName']?.toString();
     final matField = lotMap['materialId'];
     if (matField is Map) {
       final matMap = Map<String, dynamic>.from(matField);
       mId = matMap['_id']?.toString() ?? matMap['id']?.toString();
-      mName = matMap['name']?.toString();
+      mName = matMap['name']?.toString() ?? mName;
     } else if (matField != null) {
       mId = matField.toString();
     }
@@ -258,5 +273,90 @@ class LotModel extends LotEntity {
           ? DateTime.tryParse(lotMap['updatedAt'].toString())
           : null,
     );
+  }
+
+  factory LotModel.fromEntity(LotEntity entity) {
+    return LotModel(
+      id: entity.id,
+      collectorId: entity.collectorId,
+      collectorName: entity.collectorName,
+      collectorPhone: entity.collectorPhone,
+      recyclerId: entity.recyclerId,
+      recyclerName: entity.recyclerName,
+      recyclerPhone: entity.recyclerPhone,
+      materialId: entity.materialId,
+      materialName: entity.materialName,
+      images: entity.images,
+      estimatedWeight: entity.estimatedWeight,
+      actualWeight: entity.actualWeight,
+      estimatedPrice: entity.estimatedPrice,
+      finalPrice: entity.finalPrice,
+      location: entity.location is LotLocationModel
+          ? entity.location as LotLocationModel
+          : LotLocationModel.fromEntity(entity.location),
+      status: entity.status,
+      description: entity.description,
+      schedulePickup: entity.schedulePickup,
+      matchedRecyclers: entity.matchedRecyclers,
+      mlPrediction: entity.mlPrediction,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'collectorId': collectorId,
+      if (collectorName != null) 'collectorName': collectorName,
+      if (collectorPhone != null) 'collectorPhone': collectorPhone,
+      if (recyclerId != null) 'recyclerId': recyclerId,
+      if (recyclerName != null) 'recyclerName': recyclerName,
+      if (recyclerPhone != null) 'recyclerPhone': recyclerPhone,
+      if (materialId != null) 'materialId': materialId,
+      if (materialName != null) 'materialName': materialName,
+      'images': images,
+      'estimatedWeight': estimatedWeight,
+      if (actualWeight != null) 'actualWeight': actualWeight,
+      'estimatedPrice': estimatedPrice,
+      if (finalPrice != null) 'finalPrice': finalPrice,
+      'location': (location is LotLocationModel)
+          ? (location as LotLocationModel).toJson()
+          : LotLocationModel.fromEntity(location).toJson(),
+      'status': status.value,
+      if (description != null) 'description': description,
+      if (schedulePickup != null) 'schedulePickup': schedulePickup,
+      'matchedRecyclers': matchedRecyclers
+          .map((m) => m is MatchedRecyclerModel
+              ? m.toJson()
+              : MatchedRecyclerModel(
+                  recyclerId: m.recyclerId,
+                  recyclerName: m.recyclerName,
+                  phoneNumber: m.phoneNumber,
+                  address: m.address,
+                  price: m.price,
+                  estimatedTotal: m.estimatedTotal,
+                  distance: m.distance,
+                  score: m.score,
+                  breakdown: m.breakdown,
+                  priceId: m.priceId,
+                  matchedAt: m.matchedAt,
+                ).toJson())
+          .toList(),
+      if (mlPrediction != null)
+        'mlPrediction': (mlPrediction is LotMLPredictionModel)
+            ? (mlPrediction as LotMLPredictionModel).toJson()
+            : LotMLPredictionModel(
+                predictedCategory: mlPrediction!.predictedCategory,
+                confidenceScore: mlPrediction!.confidenceScore,
+                predictedPrice: mlPrediction!.predictedPrice,
+                minPrice: mlPrediction!.minPrice,
+                maxPrice: mlPrediction!.maxPrice,
+                matchLevel: mlPrediction!.matchLevel,
+                unit: mlPrediction!.unit,
+              ).toJson(),
+      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+    };
   }
 }

@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/storage/read_cache_storage.dart';
 import '../../../../core/widgets/language_audio_sheet.dart';
+import '../../../../core/widgets/offline_stale_banner.dart';
 import '../../../../core/widgets/speaker_button.dart';
 import '../../../../domain/entities/lot_entity.dart';
 import '../../collector_dependency_container.dart';
@@ -31,8 +33,13 @@ class CollectorLotsScreen extends StatelessWidget {
           } catch (_) {
             apiClient = ApiClient();
           }
+          ReadCacheStorage? readCache;
+          try {
+            readCache = ctx.read<ReadCacheStorage>();
+          } catch (_) {}
           final container = CollectorDependencyContainer.fromApiClient(
             apiClient,
+            readCacheStorage: readCache,
           );
           return container.createCollectorLotsBloc()
             ..add(const CollectorLotsFetchRequested(refresh: true));
@@ -133,8 +140,14 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
               ),
             ),
           ),
-          SpeakerButton(
-            textToSpeak: '${l10n.myRecentLots}.',
+          BlocBuilder<CollectorLotsBloc, CollectorLotsState>(
+            builder: (context, state) {
+              final isOffline = state is CollectorLotsLoaded && state.isOffline;
+              final prefix = isOffline ? '${l10n.offlineStaleNotice}। ' : '';
+              return SpeakerButton(
+                textToSpeak: '$prefix${l10n.myRecentLots}.',
+              );
+            },
           ),
           const SizedBox(width: 8),
         ],
@@ -142,6 +155,23 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
       body: SafeArea(
         child: Column(
           children: [
+            BlocBuilder<CollectorLotsBloc, CollectorLotsState>(
+              builder: (context, state) {
+                if (state is CollectorLotsLoaded && state.isOffline) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: OfflineStaleBanner(
+                      cachedAt: state.cachedAt,
+                      isRefreshing: state.isRefreshing,
+                      onRefresh: () => context.read<CollectorLotsBloc>().add(
+                        const CollectorLotsFetchRequested(refresh: true),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
             _buildFilterTabBar(),
             Expanded(
               child: BlocBuilder<CollectorLotsBloc, CollectorLotsState>(

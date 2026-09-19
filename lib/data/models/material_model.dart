@@ -61,6 +61,22 @@ class MaterialModel extends MaterialEntity {
     );
   }
 
+  factory MaterialModel.fromEntity(MaterialEntity entity) {
+    return MaterialModel(
+      id: entity.id,
+      name: entity.name,
+      category: entity.category,
+      subCategory: entity.subCategory,
+      description: entity.description,
+      images: entity.images,
+      isRecyclable: entity.isRecyclable,
+      isHazardous: entity.isHazardous,
+      processingTime: entity.processingTime,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       '_id': id,

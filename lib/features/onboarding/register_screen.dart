@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/localization/app_localizations.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/widgets/language_audio_sheet.dart';
+import '../../core/widgets/offline_blocked_sheet.dart';
 import '../../core/widgets/speaker_button.dart';
 import '../../domain/entities/user_entity.dart';
 import '../authentication/presentation/bloc/auth_bloc.dart';
@@ -51,44 +53,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final pincode = _pincodeController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.pleaseEnterFullName),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.pleaseEnterFullName)));
       return;
     }
 
     if (mobile.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.pleaseEnterValidPhone),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.pleaseEnterValidPhone)));
       return;
     }
 
     if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.passwordMinLength),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.passwordMinLength)));
       return;
     }
 
     if (pincode.isNotEmpty && pincode.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.pincodeMustBe6Digits),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.pincodeMustBe6Digits)));
       return;
     }
 
     final userRole = widget.role == 'recycler'
         ? UserRole.recycler
         : UserRole.collector;
+
+    ConnectivityService? connectivity;
+    try {
+      connectivity = context.read<ConnectivityService>();
+    } catch (_) {
+      connectivity = null;
+    }
+
+    if (connectivity != null && !connectivity.isOnline) {
+      OfflineBlockedSheet.show(context, action: OfflineBlockedAction.register);
+      return;
+    }
 
     context.read<AuthBloc>().add(
       AuthRegisterRequested(
@@ -109,19 +111,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isRecycler = widget.role == 'recycler';
-    final roleLabel =
-        isRecycler ? l10n.recyclerAccountBadge : l10n.collectorAccountBadge;
+    final roleLabel = isRecycler
+        ? l10n.recyclerAccountBadge
+        : l10n.collectorAccountBadge;
     final roleIcon = isRecycler ? Icons.factory_outlined : Icons.recycling;
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
+          ConnectivityService? connectivity;
+          try {
+            connectivity = context.read<ConnectivityService>();
+          } catch (_) {
+            connectivity = null;
+          }
+
+          final isOffline =
+              (connectivity != null && !connectivity.isOnline) ||
+              (state.lastException != null &&
+                  (state.lastException!.isNetworkError ||
+                      state.lastException!.isTimeout));
+
+          if (isOffline) {
+            OfflineBlockedSheet.show(
+              context,
+              action: OfflineBlockedAction.register,
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red.shade700,
+              ),
+            );
+          }
         } else if (state is Authenticated) {
           final targetRoute = state.user.role == UserRole.recycler
               ? '/recycler-dashboard'
@@ -162,7 +185,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE8F5E9),
                             borderRadius: BorderRadius.circular(20),
@@ -174,8 +199,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.language,
-                                  size: 16, color: Color(0xFF2E7D32)),
+                              const Icon(
+                                Icons.language,
+                                size: 16,
+                                color: Color(0xFF2E7D32),
+                              ),
                               const SizedBox(width: 5),
                               Text(
                                 context.currentLanguage.nativeLabel,
@@ -216,8 +244,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     context.isMarathi
                         ? 'कबाडीवाला कनेक्ट मध्ये सामील होण्यासाठी माहिती भरा'
                         : context.isEnglish
-                            ? 'Enter details to join Kabadiwala Connect'
-                            : 'कबाड़ीवाला कनेक्ट में शामिल होने के लिए विवरण दर्ज करें',
+                        ? 'Enter details to join Kabadiwala Connect'
+                        : 'कबाड़ीवाला कनेक्ट में शामिल होने के लिए विवरण दर्ज करें',
                     style: const TextStyle(
                       fontSize: 16,
                       color: Color(0xFF666666),
@@ -530,11 +558,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: const Color(0xFF087F68),
-            size: 22,
-          ),
+          Icon(icon, color: const Color(0xFF087F68), size: 22),
           const SizedBox(width: 14),
           Expanded(child: child),
           ?suffix,

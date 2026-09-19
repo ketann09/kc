@@ -33,13 +33,16 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
     return AuthResponseModel(
       accessToken: 'access_login',
       refreshToken: 'refresh_login',
-      user: userToReturn ??
-          UserModel.fromEntity(const UserEntity(
-            id: 'user_login',
-            fullName: 'Logged In User',
-            phoneNumber: '9876543210',
-            role: UserRole.collector,
-          )),
+      user:
+          userToReturn ??
+          UserModel.fromEntity(
+            const UserEntity(
+              id: 'user_login',
+              fullName: 'Logged In User',
+              phoneNumber: '9876543210',
+              role: UserRole.collector,
+            ),
+          ),
     );
   }
 
@@ -112,10 +115,7 @@ void main() {
       fullName: 'Sunil Kumar',
       phoneNumber: '9876543210',
       role: UserRole.collector,
-      address: UserAddressEntity(
-        city: 'Mumbai',
-        state: 'Maharashtra',
-      ),
+      address: UserAddressEntity(city: 'Mumbai', state: 'Maharashtra'),
     );
 
     const updatedBackendUser = UserEntity(
@@ -123,10 +123,7 @@ void main() {
       fullName: 'Sunil Kumar Updated',
       phoneNumber: '9876543210',
       role: UserRole.collector,
-      address: UserAddressEntity(
-        city: 'Pune',
-        state: 'Maharashtra',
-      ),
+      address: UserAddressEntity(city: 'Pune', state: 'Maharashtra'),
     );
 
     setUp(() async {
@@ -142,16 +139,16 @@ void main() {
       );
     });
 
-    test('A. Online startup: Valid tokens + backend reachable refreshes cached user',
-        () async {
+    test('A. Online startup: Valid tokens + backend reachable refreshes cached user', () async {
       await tokenStorage.saveTokens(
         accessToken: 'valid_access_token',
         refreshToken: 'valid_refresh_token',
       );
       await tokenStorage.saveUser(testUser);
 
-      mockRemoteDataSource.userToReturn =
-          UserModel.fromEntity(updatedBackendUser);
+      mockRemoteDataSource.userToReturn = UserModel.fromEntity(
+        updatedBackendUser,
+      );
 
       final session = await authRepository.restoreSession();
 
@@ -166,49 +163,55 @@ void main() {
       expect(cached.address?.city, equals('Pune'));
     });
 
-    test('B. Offline startup: Network failure falls back to cached UserEntity',
-        () async {
-      await tokenStorage.saveTokens(
-        accessToken: 'valid_access_token',
-        refreshToken: 'valid_refresh_token',
-      );
-      await tokenStorage.saveUser(testUser);
+    test(
+      'B. Offline startup: Network failure falls back to cached UserEntity',
+      () async {
+        await tokenStorage.saveTokens(
+          accessToken: 'valid_access_token',
+          refreshToken: 'valid_refresh_token',
+        );
+        await tokenStorage.saveUser(testUser);
 
-      // Backend throws network error (offline)
-      mockRemoteDataSource.errorToThrow = ApiException.network();
+        // Backend throws network error (offline)
+        mockRemoteDataSource.errorToThrow = ApiException.network();
 
-      final session = await authRepository.restoreSession();
+        final session = await authRepository.restoreSession();
 
-      // Must NOT logout; restore session using cached identity
-      expect(session, isNotNull);
-      expect(session!.user.id, equals('user_001'));
-      expect(session.user.fullName, equals('Sunil Kumar'));
-      expect(session.accessToken, equals('valid_access_token'));
+        // Must NOT logout; restore session using cached identity
+        expect(session, isNotNull);
+        expect(session!.user.id, equals('user_001'));
+        expect(session.user.fullName, equals('Sunil Kumar'));
+        expect(session.accessToken, equals('valid_access_token'));
 
-      // Tokens must remain intact in storage
-      expect(await tokenStorage.getAccessToken(), equals('valid_access_token'));
-    });
+        // Tokens must remain intact in storage
+        expect(
+          await tokenStorage.getAccessToken(),
+          equals('valid_access_token'),
+        );
+      },
+    );
 
-    test('C. Offline startup: Timeout failure falls back to cached UserEntity',
-        () async {
-      await tokenStorage.saveTokens(
-        accessToken: 'valid_access_token',
-        refreshToken: 'valid_refresh_token',
-      );
-      await tokenStorage.saveUser(testUser);
+    test(
+      'C. Offline startup: Timeout failure falls back to cached UserEntity',
+      () async {
+        await tokenStorage.saveTokens(
+          accessToken: 'valid_access_token',
+          refreshToken: 'valid_refresh_token',
+        );
+        await tokenStorage.saveUser(testUser);
 
-      // Backend throws timeout error
-      mockRemoteDataSource.errorToThrow = ApiException.timeout();
+        // Backend throws timeout error
+        mockRemoteDataSource.errorToThrow = ApiException.timeout();
 
-      final session = await authRepository.restoreSession();
+        final session = await authRepository.restoreSession();
 
-      expect(session, isNotNull);
-      expect(session!.user.id, equals('user_001'));
-      expect(session.user.fullName, equals('Sunil Kumar'));
-    });
+        expect(session, isNotNull);
+        expect(session!.user.id, equals('user_001'));
+        expect(session.user.fullName, equals('Sunil Kumar'));
+      },
+    );
 
-    test('D. Auth failure (401): Purges cached user and tokens on invalid credentials',
-        () async {
+    test('D. Auth failure (401): Purges cached user and tokens on invalid credentials', () async {
       await tokenStorage.saveTokens(
         accessToken: 'expired_access_token',
         refreshToken: 'expired_refresh_token',
@@ -230,46 +233,50 @@ void main() {
       expect(await tokenStorage.getUser(), isNull);
     });
 
-    test('E. Offline startup without cached user: Returns null safely',
-        () async {
-      await tokenStorage.saveTokens(
-        accessToken: 'valid_access_token',
-        refreshToken: 'valid_refresh_token',
-      );
-      // No cached user in storage
+    test(
+      'E. Offline startup without cached user: Returns null safely',
+      () async {
+        await tokenStorage.saveTokens(
+          accessToken: 'valid_access_token',
+          refreshToken: 'valid_refresh_token',
+        );
+        // No cached user in storage
 
-      mockRemoteDataSource.errorToThrow = ApiException.network();
+        mockRemoteDataSource.errorToThrow = ApiException.network();
 
-      final session = await authRepository.restoreSession();
+        final session = await authRepository.restoreSession();
 
-      expect(session, isNull);
-    });
+        expect(session, isNull);
+      },
+    );
 
-    test('F. Cache persistence: Serialization and corruption tolerance',
-        () async {
-      // 1. Save and retrieve full user entity
-      await tokenStorage.saveUser(testUser);
-      final retrieved = await tokenStorage.getUser();
+    test(
+      'F. Cache persistence: Serialization and corruption tolerance',
+      () async {
+        // 1. Save and retrieve full user entity
+        await tokenStorage.saveUser(testUser);
+        final retrieved = await tokenStorage.getUser();
 
-      expect(retrieved, isNotNull);
-      expect(retrieved!.id, equals(testUser.id));
-      expect(retrieved.fullName, equals(testUser.fullName));
-      expect(retrieved.role, equals(testUser.role));
-      expect(retrieved.address?.city, equals('Mumbai'));
+        expect(retrieved, isNotNull);
+        expect(retrieved!.id, equals(testUser.id));
+        expect(retrieved.fullName, equals(testUser.fullName));
+        expect(retrieved.role, equals(testUser.role));
+        expect(retrieved.address?.city, equals('Mumbai'));
 
-      // 2. Corrupt data resilience: set corrupt JSON in preferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_cached_user', '{invalid_json:');
+        // 2. Corrupt data resilience: set corrupt JSON in preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_cached_user', '{invalid_json:');
 
-      final corruptResult = await tokenStorage.getUser();
-      // Must not throw; returns null safely
-      expect(corruptResult, isNull);
+        final corruptResult = await tokenStorage.getUser();
+        // Must not throw; returns null safely
+        expect(corruptResult, isNull);
 
-      // 3. Clear user
-      await tokenStorage.saveUser(testUser);
-      await tokenStorage.clearUser();
-      expect(await tokenStorage.getUser(), isNull);
-    });
+        // 3. Clear user
+        await tokenStorage.saveUser(testUser);
+        await tokenStorage.clearUser();
+        expect(await tokenStorage.getUser(), isNull);
+      },
+    );
 
     test('G. Login and logout cache handling', () async {
       mockRemoteDataSource.userToReturn = UserModel.fromEntity(testUser);

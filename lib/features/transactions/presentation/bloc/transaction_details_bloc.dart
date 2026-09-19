@@ -68,7 +68,7 @@ class TransactionDetailsBloc
         ),
       );
     } on ApiException catch (e) {
-      emit(TransactionDetailsFailure(e.message));
+      emit(TransactionDetailsFailure(e.message, lastException: e));
     } catch (e) {
       emit(
         TransactionDetailsFailure('लेन-देन बनाने में त्रुटि: ${e.toString()}'),
@@ -88,6 +88,7 @@ class TransactionDetailsBloc
         isSubmittingHandover: true,
         actionSuccessMessage: null,
         actionErrorMessage: null,
+        clearLastActionException: true,
       ),
     );
 
@@ -105,6 +106,7 @@ class TransactionDetailsBloc
           transaction: updatedTransaction,
           isSubmittingHandover: false,
           actionSuccessMessage: 'हैंडओवर विवरण सफलतापूर्वक सहेजा गया',
+          clearLastActionException: true,
         ),
       );
     } on ApiException catch (e) {
@@ -112,6 +114,7 @@ class TransactionDetailsBloc
         currentState.copyWith(
           isSubmittingHandover: false,
           actionErrorMessage: e.message,
+          lastActionException: e,
         ),
       );
     } catch (e) {
@@ -137,6 +140,7 @@ class TransactionDetailsBloc
         isSubmittingPayment: true,
         actionSuccessMessage: null,
         actionErrorMessage: null,
+        clearLastActionException: true,
       ),
     );
 
@@ -152,6 +156,7 @@ class TransactionDetailsBloc
           transaction: updatedTransaction,
           isSubmittingPayment: false,
           actionSuccessMessage: 'भुगतान स्थिति सफलतापूर्वक अपडेट की गई',
+          clearLastActionException: true,
         ),
       );
     } on ApiException catch (e) {
@@ -159,6 +164,7 @@ class TransactionDetailsBloc
         currentState.copyWith(
           isSubmittingPayment: false,
           actionErrorMessage: e.message,
+          lastActionException: e,
         ),
       );
     } catch (e) {
@@ -180,8 +186,9 @@ class TransactionDetailsBloc
     if (currentState is TransactionDetailsLoaded) {
       emit(
         currentState.copyWith(
-          actionSuccessMessage: null,
           actionErrorMessage: null,
+          actionSuccessMessage: null,
+          clearLastActionException: true,
         ),
       );
     }

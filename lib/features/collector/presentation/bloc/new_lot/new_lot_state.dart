@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../../core/network/api_exception.dart';
 import '../../../../../domain/entities/lot_entity.dart';
 import '../../../../../domain/entities/ml_classification_entity.dart';
 import '../../../../../domain/entities/ml_price_entity.dart';
@@ -28,6 +29,7 @@ class NewLotState extends Equatable {
   final int quantity;
   final MLPriceEntity? priceEstimate;
   final LotEntity? createdLot;
+  final ApiException? lastException;
 
   const NewLotState({
     this.status = NewLotStatus.initial,
@@ -40,6 +42,7 @@ class NewLotState extends Equatable {
     this.quantity = 1,
     this.priceEstimate,
     this.createdLot,
+    this.lastException,
   });
 
   NewLotState copyWith({
@@ -54,6 +57,8 @@ class NewLotState extends Equatable {
     int? quantity,
     MLPriceEntity? priceEstimate,
     LotEntity? createdLot,
+    ApiException? lastException,
+    bool clearLastException = false,
   }) {
     return NewLotState(
       status: status ?? this.status,
@@ -68,6 +73,9 @@ class NewLotState extends Equatable {
       quantity: quantity ?? this.quantity,
       priceEstimate: priceEstimate ?? this.priceEstimate,
       createdLot: createdLot ?? this.createdLot,
+      lastException: clearLastException
+          ? null
+          : (lastException ?? this.lastException),
     );
   }
 

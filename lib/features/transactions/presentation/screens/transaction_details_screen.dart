@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/widgets/language_audio_sheet.dart';
+import '../../../../core/widgets/offline_blocked_sheet.dart';
 import '../../../../core/widgets/speaker_button.dart';
 import '../../../../domain/entities/lot_entity.dart';
 import '../../../../domain/entities/transaction_entity.dart';
@@ -123,7 +125,11 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.language, size: 15, color: Color(0xFF2E7D32)),
+                    const Icon(
+                      Icons.language,
+                      size: 15,
+                      color: Color(0xFF2E7D32),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       context.currentLanguage.nativeLabel,
@@ -168,15 +174,55 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   );
                   _bloc.add(const ResetTransactionActionEvent());
                 } else if (state.actionErrorMessage != null) {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.actionErrorMessage!),
-                      backgroundColor: const Color(0xFFD32F2F),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  ConnectivityService? connectivity;
+                  try {
+                    connectivity = context.read<ConnectivityService>();
+                  } catch (_) {
+                    connectivity = null;
+                  }
+
+                  final isOffline =
+                      (connectivity != null && !connectivity.isOnline) ||
+                      (state.lastActionException != null &&
+                          (state.lastActionException!.isNetworkError ||
+                              state.lastActionException!.isTimeout));
+
+                  if (isOffline) {
+                    OfflineBlockedSheet.show(
+                      context,
+                      action: OfflineBlockedAction.generic,
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.actionErrorMessage!),
+                        backgroundColor: const Color(0xFFD32F2F),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
                   _bloc.add(const ResetTransactionActionEvent());
+                }
+              } else if (state is TransactionDetailsFailure) {
+                ConnectivityService? connectivity;
+                try {
+                  connectivity = context.read<ConnectivityService>();
+                } catch (_) {
+                  connectivity = null;
+                }
+
+                final isOffline =
+                    (connectivity != null && !connectivity.isOnline) ||
+                    (state.lastException != null &&
+                        (state.lastException!.isNetworkError ||
+                            state.lastException!.isTimeout));
+
+                if (isOffline) {
+                  OfflineBlockedSheet.show(
+                    context,
+                    action: OfflineBlockedAction.createTransaction,
+                  );
                 }
               }
             },
@@ -422,6 +468,21 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
             height: 50,
             child: ElevatedButton(
               onPressed: () {
+                ConnectivityService? connectivity;
+                try {
+                  connectivity = context.read<ConnectivityService>();
+                } catch (_) {
+                  connectivity = null;
+                }
+
+                if (connectivity != null && !connectivity.isOnline) {
+                  OfflineBlockedSheet.show(
+                    context,
+                    action: OfflineBlockedAction.createTransaction,
+                  );
+                  return;
+                }
+
                 final amt = double.tryParse(_amountController.text.trim());
                 if (amt == null || amt <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1115,6 +1176,23 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                       );
                       return;
                     }
+
+                    ConnectivityService? connectivity;
+                    try {
+                      connectivity = context.read<ConnectivityService>();
+                    } catch (_) {
+                      connectivity = null;
+                    }
+
+                    if (connectivity != null && !connectivity.isOnline) {
+                      Navigator.of(modalCtx).pop();
+                      OfflineBlockedSheet.show(
+                        context,
+                        action: OfflineBlockedAction.updateHandover,
+                      );
+                      return;
+                    }
+
                     Navigator.of(modalCtx).pop();
                     _bloc.add(
                       UpdateHandoverEvent(
@@ -1259,6 +1337,22 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                     height: 48,
                     child: ElevatedButton(
                       onPressed: () {
+                        ConnectivityService? connectivity;
+                        try {
+                          connectivity = context.read<ConnectivityService>();
+                        } catch (_) {
+                          connectivity = null;
+                        }
+
+                        if (connectivity != null && !connectivity.isOnline) {
+                          Navigator.of(modalCtx).pop();
+                          OfflineBlockedSheet.show(
+                            context,
+                            action: OfflineBlockedAction.processPayment,
+                          );
+                          return;
+                        }
+
                         Navigator.of(modalCtx).pop();
                         _bloc.add(
                           UpdatePaymentEvent(

@@ -67,6 +67,7 @@ class RecyclerLotDetailsBloc
           isAccepting: true,
           actionErrorMessage: null,
           actionSuccessMessage: null,
+          clearLastActionException: true,
         ),
       );
 
@@ -80,6 +81,7 @@ class RecyclerLotDetailsBloc
             lot: updatedLot,
             isAccepting: false,
             actionSuccessMessage: 'लॉट सफलतापूर्वक स्वीकार कर लिया गया है',
+            clearLastActionException: true,
           ),
         );
       } on ApiException catch (e) {
@@ -87,6 +89,7 @@ class RecyclerLotDetailsBloc
           currentState.copyWith(
             isAccepting: false,
             actionErrorMessage: e.message,
+            lastActionException: e,
           ),
         );
       } catch (e) {
@@ -129,6 +132,7 @@ class RecyclerLotDetailsBloc
         isUpdatingLifecycle: true,
         actionErrorMessage: null,
         actionSuccessMessage: null,
+        clearLastActionException: true,
       ),
     );
 
@@ -167,6 +171,7 @@ class RecyclerLotDetailsBloc
           lot: updatedLot,
           isUpdatingLifecycle: false,
           actionSuccessMessage: successMessage,
+          clearLastActionException: true,
         ),
       );
     } on ApiException catch (e) {
@@ -174,6 +179,7 @@ class RecyclerLotDetailsBloc
         currentState.copyWith(
           isUpdatingLifecycle: false,
           actionErrorMessage: e.message,
+          lastActionException: e,
         ),
       );
     } catch (e) {

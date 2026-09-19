@@ -65,7 +65,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         profilePicturePath: event.profilePicturePath,
       );
     } on ApiException catch (e) {
-      emit(AuthFailure(_mapAuthErrorMessage(e.message)));
+      emit(AuthFailure(_mapAuthErrorMessage(e.message), lastException: e));
       return;
     } catch (e) {
       emit(AuthFailure(e.toString()));

@@ -21,14 +21,47 @@ class CollectorLotsLoading extends CollectorLotsState {
 class CollectorDashboardLoaded extends CollectorLotsState {
   final List<MaterialEntity> liveRates;
   final List<LotEntity> recentLots;
+  final bool isOffline;
+  final bool isRefreshing;
+  final DateTime? cachedAt;
+  final String? refreshError;
 
   const CollectorDashboardLoaded({
     required this.liveRates,
     required this.recentLots,
+    this.isOffline = false,
+    this.isRefreshing = false,
+    this.cachedAt,
+    this.refreshError,
   });
 
+  CollectorDashboardLoaded copyWith({
+    List<MaterialEntity>? liveRates,
+    List<LotEntity>? recentLots,
+    bool? isOffline,
+    bool? isRefreshing,
+    DateTime? cachedAt,
+    String? refreshError,
+  }) {
+    return CollectorDashboardLoaded(
+      liveRates: liveRates ?? this.liveRates,
+      recentLots: recentLots ?? this.recentLots,
+      isOffline: isOffline ?? this.isOffline,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+      cachedAt: cachedAt ?? this.cachedAt,
+      refreshError: refreshError ?? this.refreshError,
+    );
+  }
+
   @override
-  List<Object?> get props => [liveRates, recentLots];
+  List<Object?> get props => [
+    liveRates,
+    recentLots,
+    isOffline,
+    isRefreshing,
+    cachedAt,
+    refreshError,
+  ];
 }
 
 class CollectorLotsLoaded extends CollectorLotsState {
@@ -36,12 +69,20 @@ class CollectorLotsLoaded extends CollectorLotsState {
   final int currentPage;
   final bool hasReachedMax;
   final String? statusFilter;
+  final bool isOffline;
+  final bool isRefreshing;
+  final DateTime? cachedAt;
+  final String? refreshError;
 
   const CollectorLotsLoaded({
     required this.lots,
     required this.currentPage,
     required this.hasReachedMax,
     this.statusFilter,
+    this.isOffline = false,
+    this.isRefreshing = false,
+    this.cachedAt,
+    this.refreshError,
   });
 
   CollectorLotsLoaded copyWith({
@@ -49,33 +90,57 @@ class CollectorLotsLoaded extends CollectorLotsState {
     int? currentPage,
     bool? hasReachedMax,
     String? statusFilter,
+    bool? isOffline,
+    bool? isRefreshing,
+    DateTime? cachedAt,
+    String? refreshError,
   }) {
     return CollectorLotsLoaded(
       lots: lots ?? this.lots,
       currentPage: currentPage ?? this.currentPage,
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
       statusFilter: statusFilter ?? this.statusFilter,
+      isOffline: isOffline ?? this.isOffline,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+      cachedAt: cachedAt ?? this.cachedAt,
+      refreshError: refreshError ?? this.refreshError,
     );
   }
 
   @override
-  List<Object?> get props => [lots, currentPage, hasReachedMax, statusFilter];
+  List<Object?> get props => [
+    lots,
+    currentPage,
+    hasReachedMax,
+    statusFilter,
+    isOffline,
+    isRefreshing,
+    cachedAt,
+    refreshError,
+  ];
 }
 
 class CollectorLotDetailLoaded extends CollectorLotsState {
   final LotEntity lot;
+  final bool isOffline;
+  final DateTime? cachedAt;
 
-  const CollectorLotDetailLoaded(this.lot);
+  const CollectorLotDetailLoaded(
+    this.lot, {
+    this.isOffline = false,
+    this.cachedAt,
+  });
 
   @override
-  List<Object?> get props => [lot];
+  List<Object?> get props => [lot, isOffline, cachedAt];
 }
 
 class CollectorLotsFailure extends CollectorLotsState {
   final String message;
+  final bool isOffline;
 
-  const CollectorLotsFailure(this.message);
+  const CollectorLotsFailure(this.message, {this.isOffline = false});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isOffline];
 }

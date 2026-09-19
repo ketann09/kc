@@ -304,4 +304,65 @@ class HindiTranslations extends AppTranslations {
   }) {
     return 'लॉट स्थिति अब $status है। $nextAction';
   }
+
+  @override
+  String get offlineStaleNotice => 'ऑफलाइन — पिछली जानकारी दिखाई जा रही है';
+
+  @override
+  String get refreshFailedKeepExisting =>
+      'नया डेटा लोड नहीं हो सका — पहले की जानकारी दिखाई जा रही है';
+
+  @override
+  String get lastUpdatedPrefix => 'अंतिम अपडेट';
+
+  // Offline Mutation Blocking & Sheet
+  @override
+  String get offlineNoticeTitle => 'आप अभी ऑफलाइन हैं';
+  @override
+  String get offlineNoticeSubtitle =>
+      'यह काम इंटरनेट आने के बाद ही किया जा सकता है';
+  @override
+  String get offlineActionHelp =>
+      'कृपया अपना मोबाइल डेटा या वाई-फाई चालू करें और पुनः प्रयास करें।';
+  @override
+  String get checkConnectionAction => 'इंटरनेट कनेक्शन जांचें';
+  @override
+  String get connectionChecking => 'कनेक्शन जांच रहे हैं...';
+  @override
+  String get connectionStillOffline =>
+      'अभी भी ऑफलाइन हैं। कृपया नेटवर्क चालू करें।';
+  @override
+  String get connectionRestored => 'इंटरनेट कनेक्ट हो गया!';
+
+  // Mutation-Specific Explanations
+  @override
+  String get offlineCreateLotBlocked =>
+      'नया कबाड़ लॉट इंटरनेट आने के बाद ही बनाया जा सकता है।';
+  @override
+  String get offlineAcceptLotBlocked =>
+      'लॉट स्वीकारने के लिए इंटरनेट कनेक्शन आवश्यक है।';
+  @override
+  String get offlineMarkPickedBlocked =>
+      'लॉट पिकअप चिह्नित करने के लिए इंटरनेट आवश्यक है।';
+  @override
+  String get offlineMarkDeliveredBlocked =>
+      'लॉट डिलीवर चिह्नित करने के लिए इंटरनेट आवश्यक है।';
+  @override
+  String get offlineCompleteLotBlocked =>
+      'लॉट पूरा करने और अंतिम बिल बनाने के लिए इंटरनेट आवश्यक है।';
+  @override
+  String get offlineCreateTransactionBlocked =>
+      'लेन-देन बनाने के लिए इंटरनेट कनेक्शन आवश्यक है।';
+  @override
+  String get offlineUpdateHandoverBlocked =>
+      'हैंडओवर विवरण सहेजने के लिए इंटरनेट आवश्यक है।';
+  @override
+  String get offlineUpdatePaymentBlocked =>
+      'भुगतान स्थिति अपडेट करने के लिए इंटरनेट आवश्यक है।';
+  @override
+  String get offlineConfirmOfferBlocked =>
+      'रीसाइक्लर का प्रस्ताव स्वीकारने के लिए इंटरनेट आवश्यक है।';
+  @override
+  String get offlineRegisterBlocked =>
+      'नया खाता बनाने के लिए इंटरनेट कनेक्शन आवश्यक है।';
 }

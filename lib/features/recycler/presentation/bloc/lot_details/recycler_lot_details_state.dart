@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../../../core/network/api_exception.dart';
 import '../../../../../../domain/entities/lot_entity.dart';
 
 abstract class RecyclerLotDetailsState extends Equatable {
@@ -23,6 +24,7 @@ class RecyclerLotDetailsLoaded extends RecyclerLotDetailsState {
   final bool isUpdatingLifecycle;
   final String? actionSuccessMessage;
   final String? actionErrorMessage;
+  final ApiException? lastActionException;
 
   const RecyclerLotDetailsLoaded(
     this.lot, {
@@ -30,6 +32,7 @@ class RecyclerLotDetailsLoaded extends RecyclerLotDetailsState {
     this.isUpdatingLifecycle = false,
     this.actionSuccessMessage,
     this.actionErrorMessage,
+    this.lastActionException,
   });
 
   RecyclerLotDetailsLoaded copyWith({
@@ -38,6 +41,8 @@ class RecyclerLotDetailsLoaded extends RecyclerLotDetailsState {
     bool? isUpdatingLifecycle,
     String? actionSuccessMessage,
     String? actionErrorMessage,
+    ApiException? lastActionException,
+    bool clearLastActionException = false,
   }) {
     return RecyclerLotDetailsLoaded(
       lot ?? this.lot,
@@ -45,6 +50,9 @@ class RecyclerLotDetailsLoaded extends RecyclerLotDetailsState {
       isUpdatingLifecycle: isUpdatingLifecycle ?? this.isUpdatingLifecycle,
       actionSuccessMessage: actionSuccessMessage,
       actionErrorMessage: actionErrorMessage,
+      lastActionException: clearLastActionException
+          ? null
+          : (lastActionException ?? this.lastActionException),
     );
   }
 

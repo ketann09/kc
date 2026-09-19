@@ -420,4 +420,66 @@ class EnglishTranslations extends AppTranslations {
   String get phoneHint => '10-digit number';
   @override
   String get createAccount => 'Create Account';
+
+  @override
+  String get offlineStaleNotice =>
+      'Offline — showing previously saved information';
+
+  @override
+  String get refreshFailedKeepExisting =>
+      'Could not load fresh data — showing previously saved information';
+
+  @override
+  String get lastUpdatedPrefix => 'Last updated';
+
+  // Offline Mutation Blocking & Sheet
+  @override
+  String get offlineNoticeTitle => 'You are currently offline';
+  @override
+  String get offlineNoticeSubtitle =>
+      'This action requires an active internet connection';
+  @override
+  String get offlineActionHelp =>
+      'Please turn on mobile data or Wi-Fi and try again.';
+  @override
+  String get checkConnectionAction => 'Check Internet Connection';
+  @override
+  String get connectionChecking => 'Checking connection...';
+  @override
+  String get connectionStillOffline =>
+      'Still offline. Please check your network.';
+  @override
+  String get connectionRestored => 'Internet connection restored!';
+
+  // Mutation-Specific Explanations
+  @override
+  String get offlineCreateLotBlocked =>
+      'Creating a new scrap lot requires an internet connection.';
+  @override
+  String get offlineAcceptLotBlocked =>
+      'Accepting a lot requires an internet connection.';
+  @override
+  String get offlineMarkPickedBlocked =>
+      'Marking lot as picked up requires an internet connection.';
+  @override
+  String get offlineMarkDeliveredBlocked =>
+      'Marking lot as delivered requires an internet connection.';
+  @override
+  String get offlineCompleteLotBlocked =>
+      'Completing a lot requires an internet connection.';
+  @override
+  String get offlineCreateTransactionBlocked =>
+      'Creating a transaction requires an internet connection.';
+  @override
+  String get offlineUpdateHandoverBlocked =>
+      'Updating handover details requires an internet connection.';
+  @override
+  String get offlineUpdatePaymentBlocked =>
+      'Updating payment status requires an internet connection.';
+  @override
+  String get offlineConfirmOfferBlocked =>
+      'Confirming an offer requires an internet connection.';
+  @override
+  String get offlineRegisterBlocked =>
+      'Creating an account requires an internet connection.';
 }

@@ -1,6 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/network/api_exception.dart';
+import '../../../../../core/storage/read_cache_storage.dart';
+import '../../../../../data/models/lot_model.dart';
+import '../../../../../domain/entities/lot_entity.dart';
 import '../../../../../domain/usecases/recycler/get_recycler_lots_usecase.dart';
 import 'recycler_dashboard_event.dart';
 import 'recycler_dashboard_state.dart';
@@ -8,9 +11,12 @@ import 'recycler_dashboard_state.dart';
 class RecyclerDashboardBloc
     extends Bloc<RecyclerDashboardEvent, RecyclerDashboardState> {
   final GetRecyclerLotsUseCase getRecyclerLotsUseCase;
+  final ReadCacheStorage? readCacheStorage;
 
-  RecyclerDashboardBloc({required this.getRecyclerLotsUseCase})
-    : super(const RecyclerDashboardInitial()) {
+  RecyclerDashboardBloc({
+    required this.getRecyclerLotsUseCase,
+    this.readCacheStorage,
+  }) : super(const RecyclerDashboardInitial()) {
     on<DashboardStarted>(_onDashboardStarted);
     on<FetchIncomingLots>(_onFetchIncomingLots);
   }
@@ -42,7 +48,12 @@ class RecyclerDashboardBloc
     String? status,
     bool refresh = false,
   }) async {
-    emit(const RecyclerDashboardLoading());
+    final currentState = state;
+    if (refresh && currentState is RecyclerDashboardLoaded) {
+      emit(currentState.copyWith(isRefreshing: true, refreshError: null));
+    } else {
+      emit(const RecyclerDashboardLoading());
+    }
 
     try {
       final lots = await getRecyclerLotsUseCase(
@@ -50,6 +61,14 @@ class RecyclerDashboardBloc
         limit: limit,
         status: status,
       );
+
+      if (page == 1 && readCacheStorage != null) {
+        await readCacheStorage!.saveList<LotEntity>(
+          key: 'recycler_incoming_lots',
+          data: lots,
+          toJson: (item) => LotModel.fromEntity(item).toJson(),
+        );
+      }
 
       if (lots.isEmpty) {
         emit(const RecyclerDashboardEmpty());
@@ -59,13 +78,53 @@ class RecyclerDashboardBloc
             lots: lots,
             currentPage: page,
             hasReachedMax: lots.length < limit,
+            isOffline: false,
+            isRefreshing: false,
           ),
         );
       }
     } on ApiException catch (e) {
-      emit(RecyclerDashboardFailure(e.message));
+      final isOffline = e.isNetworkError || e.isTimeout;
+      if (currentState is RecyclerDashboardLoaded) {
+        emit(
+          currentState.copyWith(
+            isRefreshing: false,
+            isOffline: isOffline,
+            refreshError: e.message,
+          ),
+        );
+      } else {
+        final cached = await readCacheStorage?.getList<LotEntity>(
+          key: 'recycler_incoming_lots',
+          fromJson: (json) => LotModel.fromJson(json),
+        );
+        if (cached != null && cached.data.isNotEmpty) {
+          emit(
+            RecyclerDashboardLoaded(
+              lots: cached.data,
+              currentPage: 1,
+              hasReachedMax: true,
+              isOffline: true,
+              cachedAt: cached.cachedAt,
+              refreshError: e.message,
+            ),
+          );
+        } else {
+          emit(RecyclerDashboardFailure(e.message, isOffline: isOffline));
+        }
+      }
     } catch (e) {
-      emit(RecyclerDashboardFailure('Failed to load lots: ${e.toString()}'));
+      if (currentState is RecyclerDashboardLoaded) {
+        emit(
+          currentState.copyWith(
+            isRefreshing: false,
+            isOffline: true,
+            refreshError: e.toString(),
+          ),
+        );
+      } else {
+        emit(RecyclerDashboardFailure('Failed to load lots: ${e.toString()}'));
+      }
     }
   }
 }

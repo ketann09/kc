@@ -1,6 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/network/api_exception.dart';
+import '../../../../../core/storage/read_cache_storage.dart';
+import '../../../../../data/models/lot_model.dart';
+import '../../../../../data/models/material_model.dart';
 import '../../../../../domain/entities/lot_entity.dart';
 import '../../../../../domain/entities/material_entity.dart';
 import '../../../../../domain/usecases/collector/get_collector_lots_usecase.dart';
@@ -13,11 +16,13 @@ class CollectorLotsBloc extends Bloc<CollectorLotsEvent, CollectorLotsState> {
   final GetCollectorLotsUseCase getCollectorLotsUseCase;
   final GetLotDetailsUseCase getLotDetailsUseCase;
   final GetLiveScrapRatesUseCase getLiveScrapRatesUseCase;
+  final ReadCacheStorage? readCacheStorage;
 
   CollectorLotsBloc({
     required this.getCollectorLotsUseCase,
     required this.getLotDetailsUseCase,
     required this.getLiveScrapRatesUseCase,
+    this.readCacheStorage,
   }) : super(const CollectorLotsInitial()) {
     on<CollectorDashboardInitRequested>(_onDashboardInit);
     on<CollectorLotsFetchRequested>(_onLotsFetch);
@@ -28,29 +33,78 @@ class CollectorLotsBloc extends Bloc<CollectorLotsEvent, CollectorLotsState> {
     CollectorDashboardInitRequested event,
     Emitter<CollectorLotsState> emit,
   ) async {
-    emit(const CollectorLotsLoading());
+    final currentState = state;
+    if (currentState is CollectorDashboardLoaded) {
+      emit(currentState.copyWith(isRefreshing: true, refreshError: null));
+    } else {
+      emit(const CollectorLotsLoading());
+    }
 
     try {
-      List<MaterialEntity> rates = [];
-      List<LotEntity> lots = [];
+      final rates = await getLiveScrapRatesUseCase();
+      final lots = await getCollectorLotsUseCase(page: 1, limit: 5);
 
-      try {
-        rates = await getLiveScrapRatesUseCase();
-      } catch (_) {
-        // Allow dashboard to load even if rates fail
+      if (readCacheStorage != null) {
+        if (rates.isNotEmpty) {
+          await readCacheStorage!.saveList<MaterialEntity>(
+            key: 'collector_live_rates',
+            data: rates,
+            toJson: (item) => MaterialModel.fromEntity(item).toJson(),
+          );
+        }
+        await readCacheStorage!.saveList<LotEntity>(
+          key: 'collector_recent_lots',
+          data: lots,
+          toJson: (item) => LotModel.fromEntity(item).toJson(),
+        );
       }
 
-      try {
-        lots = await getCollectorLotsUseCase(page: 1, limit: 5);
-      } catch (_) {
-        // Allow dashboard to load even if lots fail
-      }
-
-      emit(CollectorDashboardLoaded(liveRates: rates, recentLots: lots));
+      emit(CollectorDashboardLoaded(
+        liveRates: rates,
+        recentLots: lots,
+        isOffline: false,
+        isRefreshing: false,
+      ));
     } on ApiException catch (e) {
-      emit(CollectorLotsFailure(e.message));
+      final isOffline = e.isNetworkError || e.isTimeout;
+      if (currentState is CollectorDashboardLoaded) {
+        emit(currentState.copyWith(
+          isRefreshing: false,
+          isOffline: isOffline,
+          refreshError: e.message,
+        ));
+      } else {
+        final cachedLots = await readCacheStorage?.getList<LotEntity>(
+          key: 'collector_recent_lots',
+          fromJson: (json) => LotModel.fromJson(json),
+        );
+        final cachedRates = await readCacheStorage?.getList<MaterialEntity>(
+          key: 'collector_live_rates',
+          fromJson: (json) => MaterialModel.fromJson(json),
+        );
+
+        if (cachedLots != null || cachedRates != null) {
+          emit(CollectorDashboardLoaded(
+            liveRates: cachedRates?.data ?? [],
+            recentLots: cachedLots?.data ?? [],
+            isOffline: true,
+            cachedAt: cachedLots?.cachedAt ?? cachedRates?.cachedAt,
+            refreshError: e.message,
+          ));
+        } else {
+          emit(CollectorLotsFailure(e.message, isOffline: isOffline));
+        }
+      }
     } catch (e) {
-      emit(CollectorLotsFailure('Failed to load dashboard: ${e.toString()}'));
+      if (currentState is CollectorDashboardLoaded) {
+        emit(currentState.copyWith(
+          isRefreshing: false,
+          isOffline: true,
+          refreshError: e.toString(),
+        ));
+      } else {
+        emit(CollectorLotsFailure('Failed to load dashboard: ${e.toString()}'));
+      }
     }
   }
 
@@ -64,6 +118,8 @@ class CollectorLotsBloc extends Bloc<CollectorLotsEvent, CollectorLotsState> {
     if (!event.refresh && currentState is CollectorLotsLoaded) {
       if (currentState.hasReachedMax) return;
       currentLots = currentState.lots;
+    } else if (event.refresh && currentState is CollectorLotsLoaded) {
+      emit(currentState.copyWith(isRefreshing: true, refreshError: null));
     } else {
       emit(const CollectorLotsLoading());
     }
@@ -74,6 +130,14 @@ class CollectorLotsBloc extends Bloc<CollectorLotsEvent, CollectorLotsState> {
         limit: event.limit,
         status: event.status,
       );
+
+      if (event.page == 1 && readCacheStorage != null) {
+        await readCacheStorage!.saveList<LotEntity>(
+          key: 'collector_lots',
+          data: newLots,
+          toJson: (item) => LotModel.fromEntity(item).toJson(),
+        );
+      }
 
       final hasReachedMax = newLots.length < event.limit;
       final combined = event.refresh || event.page == 1
@@ -86,12 +150,52 @@ class CollectorLotsBloc extends Bloc<CollectorLotsEvent, CollectorLotsState> {
           currentPage: event.page,
           hasReachedMax: hasReachedMax,
           statusFilter: event.status,
+          isOffline: false,
+          isRefreshing: false,
         ),
       );
     } on ApiException catch (e) {
-      emit(CollectorLotsFailure(e.message));
+      final isOffline = e.isNetworkError || e.isTimeout;
+      if (currentState is CollectorLotsLoaded) {
+        emit(
+          currentState.copyWith(
+            isRefreshing: false,
+            isOffline: isOffline,
+            refreshError: e.message,
+          ),
+        );
+      } else {
+        final cached = await readCacheStorage?.getList<LotEntity>(
+          key: 'collector_lots',
+          fromJson: (json) => LotModel.fromJson(json),
+        );
+        if (cached != null) {
+          emit(
+            CollectorLotsLoaded(
+              lots: cached.data,
+              currentPage: 1,
+              hasReachedMax: true,
+              isOffline: true,
+              cachedAt: cached.cachedAt,
+              refreshError: e.message,
+            ),
+          );
+        } else {
+          emit(CollectorLotsFailure(e.message, isOffline: isOffline));
+        }
+      }
     } catch (e) {
-      emit(CollectorLotsFailure('Failed to load lots: ${e.toString()}'));
+      if (currentState is CollectorLotsLoaded) {
+        emit(
+          currentState.copyWith(
+            isRefreshing: false,
+            isOffline: true,
+            refreshError: e.toString(),
+          ),
+        );
+      } else {
+        emit(CollectorLotsFailure('Failed to load lots: ${e.toString()}'));
+      }
     }
   }
 
@@ -103,11 +207,42 @@ class CollectorLotsBloc extends Bloc<CollectorLotsEvent, CollectorLotsState> {
 
     try {
       final lot = await getLotDetailsUseCase(event.lotId);
-      emit(CollectorLotDetailLoaded(lot));
+      if (readCacheStorage != null) {
+        await readCacheStorage!.save<LotEntity>(
+          key: 'lot_detail_${event.lotId}',
+          data: lot,
+          toJson: (item) => LotModel.fromEntity(item).toJson(),
+        );
+      }
+      emit(CollectorLotDetailLoaded(lot, isOffline: false));
     } on ApiException catch (e) {
-      emit(CollectorLotsFailure(e.message));
+      final cached = await readCacheStorage?.get<LotEntity>(
+        key: 'lot_detail_${event.lotId}',
+        fromJson: (json) => LotModel.fromJson(json),
+      );
+      if (cached != null) {
+        emit(CollectorLotDetailLoaded(
+          cached.data,
+          isOffline: true,
+          cachedAt: cached.cachedAt,
+        ));
+      } else {
+        emit(CollectorLotsFailure(e.message, isOffline: true));
+      }
     } catch (e) {
-      emit(CollectorLotsFailure('Failed to load lot details: ${e.toString()}'));
+      final cached = await readCacheStorage?.get<LotEntity>(
+        key: 'lot_detail_${event.lotId}',
+        fromJson: (json) => LotModel.fromJson(json),
+      );
+      if (cached != null) {
+        emit(CollectorLotDetailLoaded(
+          cached.data,
+          isOffline: true,
+          cachedAt: cached.cachedAt,
+        ));
+      } else {
+        emit(CollectorLotsFailure('Failed to load lot details: ${e.toString()}'));
+      }
     }
   }
 }

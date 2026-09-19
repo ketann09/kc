@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/read_cache_storage.dart';
 import '../../../core/widgets/language_audio_sheet.dart';
+import '../../../core/widgets/offline_stale_banner.dart';
 import '../../../core/widgets/speaker_button.dart';
 import '../../../domain/entities/lot_entity.dart';
 import '../authentication/presentation/bloc/auth_bloc.dart';
@@ -30,8 +32,13 @@ class RecyclerDashboardScreen extends StatelessWidget {
           } catch (_) {
             apiClient = ApiClient();
           }
+          ReadCacheStorage? readCache;
+          try {
+            readCache = ctx.read<ReadCacheStorage>();
+          } catch (_) {}
           final container = RecyclerDependencyContainer.fromApiClient(
             apiClient,
+            readCacheStorage: readCache,
           );
           final bloc = container.createRecyclerDashboardBloc();
 
@@ -114,8 +121,11 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.language,
-                      size: 15, color: Color(0xFF2E7D32)),
+                  const Icon(
+                    Icons.language,
+                    size: 15,
+                    color: Color(0xFF2E7D32),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     context.currentLanguage.nativeLabel,
@@ -131,10 +141,15 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
           ),
           BlocBuilder<RecyclerDashboardBloc, RecyclerDashboardState>(
             builder: (context, state) {
-              final count =
-                  state is RecyclerDashboardLoaded ? state.lots.length : 0;
+              final count = state is RecyclerDashboardLoaded
+                  ? state.lots.length
+                  : 0;
+              final isOffline =
+                  state is RecyclerDashboardLoaded && state.isOffline;
+              final prefix = isOffline ? '${l10n.offlineStaleNotice}। ' : '';
               return SpeakerButton(
-                textToSpeak: '${l10n.newLotRequests}. $count ${l10n.allLots}.',
+                textToSpeak:
+                    '$prefix${l10n.newLotRequests}. $count ${l10n.allLots}.',
               );
             },
           ),
@@ -152,7 +167,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
             } else if (state is RecyclerDashboardEmpty) {
               return _buildEmptyState(context);
             } else if (state is RecyclerDashboardLoaded) {
-              return _buildLotsList(context, state.lots);
+              return _buildLotsList(context, state);
             }
             return const SizedBox.shrink();
           },
@@ -168,7 +183,9 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const CircularProgressIndicator(
-              color: Color(0xFF147A65), strokeWidth: 3),
+            color: Color(0xFF147A65),
+            strokeWidth: 3,
+          ),
           const SizedBox(height: 20),
           Text(
             l10n.lotsLoading,
@@ -316,8 +333,9 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
     );
   }
 
-  Widget _buildLotsList(BuildContext context, List<LotEntity> lots) {
+  Widget _buildLotsList(BuildContext context, RecyclerDashboardLoaded state) {
     final l10n = context.l10n;
+    final lots = state.lots;
 
     return RefreshIndicator(
       color: const Color(0xFF147A65),
@@ -331,12 +349,28 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
         itemCount: lots.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                l10n.incomingLotsSubtitle,
-                style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
-              ),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (state.isOffline)
+                  OfflineStaleBanner(
+                    cachedAt: state.cachedAt,
+                    isRefreshing: state.isRefreshing,
+                    onRefresh: () => context.read<RecyclerDashboardBloc>().add(
+                      const FetchIncomingLots(page: 1, refresh: true),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    l10n.incomingLotsSubtitle,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+              ],
             );
           }
 
@@ -373,13 +407,13 @@ class _LotCard extends StatelessWidget {
 
     final materialTitle =
         (lot.materialName != null && lot.materialName!.isNotEmpty)
-            ? lot.materialName!
-            : (lot.mlPrediction?.predictedCategory != null &&
-                    lot.mlPrediction!.predictedCategory!.isNotEmpty)
-                ? lot.mlPrediction!.predictedCategory!
-                : (lot.description != null && lot.description!.isNotEmpty)
-                    ? lot.description!
-                    : (context.isMarathi ? 'स्क्रॅप लॉट' : 'स्क्रैप लॉट');
+        ? lot.materialName!
+        : (lot.mlPrediction?.predictedCategory != null &&
+              lot.mlPrediction!.predictedCategory!.isNotEmpty)
+        ? lot.mlPrediction!.predictedCategory!
+        : (lot.description != null && lot.description!.isNotEmpty)
+        ? lot.description!
+        : (context.isMarathi ? 'स्क्रॅप लॉट' : 'स्क्रैप लॉट');
 
     final priceText = lot.estimatedPrice > 0
         ? '₹${lot.estimatedPrice.toStringAsFixed(0)}'
@@ -392,21 +426,21 @@ class _LotCard extends StatelessWidget {
 
     final collectorInfo =
         (lot.collectorName != null && lot.collectorName!.isNotEmpty)
-            ? (context.isMarathi
-                ? '${lot.collectorName!} कडून पाठवले'
-                : '${lot.collectorName!} द्वारा भेजा गया')
-            : (context.isMarathi
-                ? 'कलेक्टरकडून पाठवले'
-                : 'कलेक्टर द्वारा भेजा गया');
+        ? (context.isMarathi
+              ? '${lot.collectorName!} कडून पाठवले'
+              : '${lot.collectorName!} द्वारा भेजा गया')
+        : (context.isMarathi
+              ? 'कलेक्टरकडून पाठवले'
+              : 'कलेक्टर द्वारा भेजा गया');
 
     final locationText =
         (lot.location.city != null && lot.location.city!.isNotEmpty)
-            ? (lot.location.state != null && lot.location.state!.isNotEmpty
-                ? '${lot.location.city}, ${lot.location.state}'
-                : lot.location.city!)
-            : (lot.location.address != null && lot.location.address!.isNotEmpty
-                ? lot.location.address!
-                : null);
+        ? (lot.location.state != null && lot.location.state!.isNotEmpty
+              ? '${lot.location.city}, ${lot.location.state}'
+              : lot.location.city!)
+        : (lot.location.address != null && lot.location.address!.isNotEmpty
+              ? lot.location.address!
+              : null);
 
     final isPickup = lot.schedulePickup != null;
 

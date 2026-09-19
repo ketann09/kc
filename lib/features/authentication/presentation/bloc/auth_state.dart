@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/network/api_exception.dart';
 import '../../../../domain/entities/user_entity.dart';
 
 abstract class AuthState extends Equatable {
@@ -47,8 +48,9 @@ class AuthRegistrationSuccess extends AuthState {
 /// Authentication or operation failed with an error message
 class AuthFailure extends AuthState {
   final String message;
+  final ApiException? lastException;
 
-  const AuthFailure(this.message);
+  const AuthFailure(this.message, {this.lastException});
 
   @override
   List<Object?> get props => [message];

@@ -1,4 +1,5 @@
 import '../../core/network/api_client.dart';
+import '../../core/storage/read_cache_storage.dart';
 import '../../data/datasources/remote/lots_remote_data_source.dart';
 import '../../data/datasources/remote/matchmaking_remote_data_source.dart';
 import '../../data/datasources/remote/materials_remote_data_source.dart';
@@ -33,6 +34,7 @@ class CollectorDependencyContainer {
   final MatchmakingRepository matchmakingRepository;
   final CollectorLotsRepository collectorLotsRepository;
   final TransactionsRepository? transactionsRepository;
+  final ReadCacheStorage? readCacheStorage;
 
   // Domain use cases
   late final ClassifyScrapImageUseCase classifyScrapImageUseCase;
@@ -50,6 +52,7 @@ class CollectorDependencyContainer {
     required this.matchmakingRepository,
     required this.collectorLotsRepository,
     this.transactionsRepository,
+    this.readCacheStorage,
   }) {
     classifyScrapImageUseCase = ClassifyScrapImageUseCase(mlRepository);
     estimatePriceUseCase = EstimatePriceUseCase(mlRepository);
@@ -70,7 +73,10 @@ class CollectorDependencyContainer {
     }
   }
 
-  factory CollectorDependencyContainer.fromApiClient(ApiClient apiClient) {
+  factory CollectorDependencyContainer.fromApiClient(
+    ApiClient apiClient, {
+    ReadCacheStorage? readCacheStorage,
+  }) {
     return CollectorDependencyContainer(
       mlRepository: MLRepositoryImpl(
         remoteDataSource: MLRemoteDataSourceImpl(apiClient: apiClient),
@@ -89,6 +95,7 @@ class CollectorDependencyContainer {
           apiClient: apiClient,
         ),
       ),
+      readCacheStorage: readCacheStorage ?? SharedPreferencesReadCacheStorage(),
     );
   }
 
@@ -101,18 +108,23 @@ class CollectorDependencyContainer {
   MatchmakingBloc createMatchmakingBloc() =>
       MatchmakingBloc(getMatchedRecyclersUseCase: getMatchedRecyclersUseCase);
 
-  CollectorLotsBloc createCollectorLotsBloc() => CollectorLotsBloc(
-    getCollectorLotsUseCase: getCollectorLotsUseCase,
-    getLotDetailsUseCase: getLotDetailsUseCase,
-    getLiveScrapRatesUseCase: getLiveScrapRatesUseCase,
-  );
+  CollectorLotsBloc createCollectorLotsBloc({ReadCacheStorage? readCache}) =>
+      CollectorLotsBloc(
+        getCollectorLotsUseCase: getCollectorLotsUseCase,
+        getLotDetailsUseCase: getLotDetailsUseCase,
+        getLiveScrapRatesUseCase: getLiveScrapRatesUseCase,
+        readCacheStorage: readCache ?? readCacheStorage,
+      );
 
-  CollectorTransactionsBloc createCollectorTransactionsBloc() {
+  CollectorTransactionsBloc createCollectorTransactionsBloc({
+    ReadCacheStorage? readCache,
+  }) {
     if (getCollectorTransactionsUseCase == null) {
       throw StateError('TransactionsRepository is not initialized');
     }
     return CollectorTransactionsBloc(
       getCollectorTransactionsUseCase: getCollectorTransactionsUseCase!,
+      readCacheStorage: readCache ?? readCacheStorage,
     );
   }
 }

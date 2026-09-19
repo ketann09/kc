@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/storage/read_cache_storage.dart';
 import '../../../../core/widgets/language_audio_sheet.dart';
+import '../../../../core/widgets/offline_stale_banner.dart';
 import '../../../../core/widgets/speaker_button.dart';
+import '../../../../data/models/lot_model.dart';
 import '../../../../domain/entities/lot_entity.dart';
 import '../../../../domain/usecases/collector/get_lot_details_usecase.dart';
 import '../../../../domain/usecases/transactions/get_collector_transactions_usecase.dart';
@@ -30,13 +34,15 @@ class CollectorLotDetailsScreen extends StatefulWidget {
 }
 
 class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
+  late final GetLotDetailsUseCase _getLotDetailsUseCase;
+  late final GetCollectorTransactionsUseCase _getCollectorTransactionsUseCase;
+
   LotEntity? _lot;
   bool _isLoading = true;
   String? _errorMessage;
   bool _isCheckingTransaction = false;
-
-  late final GetLotDetailsUseCase _getLotDetailsUseCase;
-  late final GetCollectorTransactionsUseCase _getCollectorTransactionsUseCase;
+  bool _isOffline = false;
+  DateTime? _cachedAt;
 
   @override
   void initState() {
@@ -67,20 +73,39 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
       _errorMessage = null;
     });
 
+    ReadCacheStorage? readCache;
+    try {
+      readCache = context.read<ReadCacheStorage>();
+    } catch (_) {}
+
     try {
       final lot = await _getLotDetailsUseCase(widget.lotId);
       if (mounted) {
         setState(() {
           _lot = lot;
           _isLoading = false;
+          _isOffline = false;
         });
       }
     } catch (e) {
+      final cached = await (readCache ?? SharedPreferencesReadCacheStorage()).get<LotEntity>(
+        key: 'lot_detail_${widget.lotId}',
+        fromJson: (json) => LotModel.fromJson(json),
+      );
       if (mounted) {
-        setState(() {
-          _errorMessage = 'लॉट विवरण लोड नहीं हो सका: ${e.toString()}';
-          _isLoading = false;
-        });
+        if (cached != null) {
+          setState(() {
+            _lot = cached.data;
+            _isLoading = false;
+            _isOffline = true;
+            _cachedAt = cached.cachedAt;
+          });
+        } else {
+          setState(() {
+            _errorMessage = 'लॉट विवरण लोड नहीं हो सका: ${e.toString()}';
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -229,7 +254,7 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
           if (_lot != null)
             SpeakerButton(
               textToSpeak:
-                  '${l10n.lotDetails}. ${_lot!.materialName ?? _lot!.description ?? ""}. ${l10n.weight}: ${_lot!.estimatedWeight} kg. ${l10n.estimatedPrice}: ₹${_lot!.estimatedPrice.toStringAsFixed(0)}.',
+                  '${_isOffline ? "${l10n.offlineStaleNotice}। " : ""}${l10n.lotDetails}. ${_lot!.materialName ?? _lot!.description ?? ""}. ${l10n.weight}: ${_lot!.estimatedWeight} kg. ${l10n.estimatedPrice}: ₹${_lot!.estimatedPrice.toStringAsFixed(0)}.',
             ),
           const SizedBox(width: 8),
         ],
@@ -281,6 +306,13 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_isOffline) ...[
+            OfflineStaleBanner(
+              cachedAt: _cachedAt,
+              onRefresh: _fetchLot,
+            ),
+            const SizedBox(height: 12),
+          ],
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

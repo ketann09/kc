@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/connectivity_service.dart';
 import '../../../core/widgets/language_audio_sheet.dart';
+import '../../../core/widgets/offline_blocked_sheet.dart';
 import '../../../core/widgets/speaker_button.dart';
 import '../../../domain/entities/lot_entity.dart';
 import '../authentication/presentation/bloc/auth_bloc.dart';
@@ -126,7 +128,11 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.language, size: 15, color: Color(0xFF2E7D32)),
+                  const Icon(
+                    Icons.language,
+                    size: 15,
+                    color: Color(0xFF2E7D32),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     context.currentLanguage.nativeLabel,
@@ -170,14 +176,34 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
                   ),
                 );
               } else if (state.actionErrorMessage != null) {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.actionErrorMessage!),
-                    backgroundColor: const Color(0xFFD32F2F),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                ConnectivityService? connectivity;
+                try {
+                  connectivity = context.read<ConnectivityService>();
+                } catch (_) {
+                  connectivity = null;
+                }
+
+                final isOffline =
+                    (connectivity != null && !connectivity.isOnline) ||
+                    (state.lastActionException != null &&
+                        (state.lastActionException!.isNetworkError ||
+                            state.lastActionException!.isTimeout));
+
+                if (isOffline) {
+                  OfflineBlockedSheet.show(
+                    context,
+                    action: OfflineBlockedAction.generic,
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(state.actionErrorMessage!),
+                      backgroundColor: const Color(0xFFD32F2F),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
               }
             }
           },
@@ -1204,6 +1230,18 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     BuildContext context,
     LotEntity lot,
   ) async {
+    ConnectivityService? connectivity;
+    try {
+      connectivity = context.read<ConnectivityService>();
+    } catch (_) {
+      connectivity = null;
+    }
+
+    if (connectivity != null && !connectivity.isOnline) {
+      OfflineBlockedSheet.show(context, action: OfflineBlockedAction.acceptLot);
+      return;
+    }
+
     final priceStr = lot.estimatedPrice > 0
         ? '₹${lot.estimatedPrice.toStringAsFixed(0)}'
         : 'अनुमानित दर';
@@ -1255,6 +1293,13 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     );
 
     if (confirmed == true && context.mounted) {
+      if (connectivity != null && !connectivity.isOnline) {
+        OfflineBlockedSheet.show(
+          context,
+          action: OfflineBlockedAction.acceptLot,
+        );
+        return;
+      }
       context.read<RecyclerLotDetailsBloc>().add(
         AcceptRecyclerLotEvent(lotId: lot.id),
       );
@@ -1265,6 +1310,21 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     BuildContext context,
     LotEntity lot,
   ) async {
+    ConnectivityService? connectivity;
+    try {
+      connectivity = context.read<ConnectivityService>();
+    } catch (_) {
+      connectivity = null;
+    }
+
+    if (connectivity != null && !connectivity.isOnline) {
+      OfflineBlockedSheet.show(
+        context,
+        action: OfflineBlockedAction.markPicked,
+      );
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -1309,6 +1369,13 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     );
 
     if (confirmed == true && context.mounted) {
+      if (connectivity != null && !connectivity.isOnline) {
+        OfflineBlockedSheet.show(
+          context,
+          action: OfflineBlockedAction.markPicked,
+        );
+        return;
+      }
       context.read<RecyclerLotDetailsBloc>().add(
         UpdateRecyclerLotLifecycleEvent(lotId: lot.id, status: 'picked'),
       );
@@ -1319,6 +1386,21 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     BuildContext context,
     LotEntity lot,
   ) async {
+    ConnectivityService? connectivity;
+    try {
+      connectivity = context.read<ConnectivityService>();
+    } catch (_) {
+      connectivity = null;
+    }
+
+    if (connectivity != null && !connectivity.isOnline) {
+      OfflineBlockedSheet.show(
+        context,
+        action: OfflineBlockedAction.markDelivered,
+      );
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -1363,6 +1445,13 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     );
 
     if (confirmed == true && context.mounted) {
+      if (connectivity != null && !connectivity.isOnline) {
+        OfflineBlockedSheet.show(
+          context,
+          action: OfflineBlockedAction.markDelivered,
+        );
+        return;
+      }
       context.read<RecyclerLotDetailsBloc>().add(
         UpdateRecyclerLotLifecycleEvent(lotId: lot.id, status: 'delivered'),
       );
@@ -1377,6 +1466,21 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
       setState(() {
         _actualWeightError = 'कृपया वैध वास्तविक वजन (किलो) दर्ज करें';
       });
+      return;
+    }
+
+    ConnectivityService? connectivity;
+    try {
+      connectivity = context.read<ConnectivityService>();
+    } catch (_) {
+      connectivity = null;
+    }
+
+    if (connectivity != null && !connectivity.isOnline) {
+      OfflineBlockedSheet.show(
+        context,
+        action: OfflineBlockedAction.completeLot,
+      );
       return;
     }
 
@@ -1438,6 +1542,13 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     );
 
     if (confirmed == true && context.mounted) {
+      if (connectivity != null && !connectivity.isOnline) {
+        OfflineBlockedSheet.show(
+          context,
+          action: OfflineBlockedAction.completeLot,
+        );
+        return;
+      }
       context.read<RecyclerLotDetailsBloc>().add(
         UpdateRecyclerLotLifecycleEvent(
           lotId: lot.id,

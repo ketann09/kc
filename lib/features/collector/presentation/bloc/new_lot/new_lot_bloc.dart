@@ -329,6 +329,7 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
           status: NewLotStatus.failure,
           errorType: NewLotErrorType.submission,
           errorMessage: e.message,
+          lastException: e,
         ),
       );
     } catch (e) {

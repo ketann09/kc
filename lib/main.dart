@@ -12,6 +12,7 @@ import 'core/services/connectivity_service.dart';
 import 'core/services/tts_service.dart';
 import 'core/storage/accessibility_preferences_storage.dart';
 import 'core/storage/auth_token_storage.dart';
+import 'core/storage/read_cache_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'data/datasources/remote/auth_remote_data_source.dart';
 import 'data/repositories/auth_repository_impl.dart';
@@ -31,6 +32,7 @@ class KabadiwalaConnectApp extends StatefulWidget {
   final TtsService? ttsService;
   final ConnectivityService? connectivityService;
   final NetworkCubit? networkCubit;
+  final ReadCacheStorage? readCacheStorage;
 
   const KabadiwalaConnectApp({
     super.key,
@@ -39,6 +41,7 @@ class KabadiwalaConnectApp extends StatefulWidget {
     this.ttsService,
     this.connectivityService,
     this.networkCubit,
+    this.readCacheStorage,
   });
 
   @override
@@ -48,6 +51,7 @@ class KabadiwalaConnectApp extends StatefulWidget {
 class _KabadiwalaConnectAppState extends State<KabadiwalaConnectApp> {
   late final ApiClient _apiClient;
   late final AuthTokenStorage _tokenStorage;
+  late final ReadCacheStorage _readCacheStorage;
   late final AuthRemoteDataSource _remoteDataSource;
   late final AuthRepository _authRepository;
   late final AuthBloc _authBloc;
@@ -62,6 +66,8 @@ class _KabadiwalaConnectAppState extends State<KabadiwalaConnectApp> {
     super.initState();
     _apiClient = ApiClient();
     _tokenStorage = SharedPreferencesAuthTokenStorage();
+    _readCacheStorage =
+        widget.readCacheStorage ?? SharedPreferencesReadCacheStorage();
     _remoteDataSource = AuthRemoteDataSourceImpl(apiClient: _apiClient);
     _authRepository = widget.authRepository ??
         AuthRepositoryImpl(
@@ -106,6 +112,7 @@ class _KabadiwalaConnectAppState extends State<KabadiwalaConnectApp> {
         RepositoryProvider<TtsService>.value(value: _ttsService),
         RepositoryProvider<ConnectivityService>.value(
             value: _connectivityService),
+        RepositoryProvider<ReadCacheStorage>.value(value: _readCacheStorage),
       ],
       child: MultiBlocProvider(
         providers: [

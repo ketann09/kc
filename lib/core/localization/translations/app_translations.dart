@@ -214,9 +214,16 @@ abstract class AppTranslations {
   String get upiPayment => 'यूपीआई भुगतान';
   String get bankTransfer => 'बैंक ट्रांसफर';
 
+  // Offline Read Caching & Stale Data
+  String get offlineStaleNotice;
+  String get refreshFailedKeepExisting;
+  String get lastUpdatedPrefix;
+
   // Parametric Spoken Sentences
-  String spokenDashboardSummary(
-      {required int lotCount, required String topRate});
+  String spokenDashboardSummary({
+    required int lotCount,
+    required String topRate,
+  });
   String spokenLotDetails({
     required String material,
     required num weight,
@@ -232,4 +239,25 @@ abstract class AppTranslations {
     required String status,
     required String nextAction,
   });
+
+  // Offline Mutation Blocking & Sheet
+  String get offlineNoticeTitle;
+  String get offlineNoticeSubtitle;
+  String get offlineActionHelp;
+  String get checkConnectionAction;
+  String get connectionChecking;
+  String get connectionStillOffline;
+  String get connectionRestored;
+
+  // Mutation-Specific Explanations
+  String get offlineCreateLotBlocked;
+  String get offlineAcceptLotBlocked;
+  String get offlineMarkPickedBlocked;
+  String get offlineMarkDeliveredBlocked;
+  String get offlineCompleteLotBlocked;
+  String get offlineCreateTransactionBlocked;
+  String get offlineUpdateHandoverBlocked;
+  String get offlineUpdatePaymentBlocked;
+  String get offlineConfirmOfferBlocked;
+  String get offlineRegisterBlocked;
 }

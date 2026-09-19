@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/localization/app_localizations.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/widgets/language_audio_sheet.dart';
+import '../../core/widgets/offline_blocked_sheet.dart';
 import '../../core/widgets/speaker_button.dart';
 import '../../domain/entities/lot_entity.dart';
 import '../authentication/presentation/bloc/auth_bloc.dart';
@@ -206,8 +208,8 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                     context.isMarathi
                         ? 'फोटोचा स्रोत निवडा'
                         : context.isEnglish
-                            ? 'Select Photo Source'
-                            : 'फोटो का स्रोत चुनें',
+                        ? 'Select Photo Source'
+                        : 'फोटो का स्रोत चुनें',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -305,12 +307,32 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
         if (state.status == NewLotStatus.failure &&
             state.errorMessage != null &&
             state.errorType == NewLotErrorType.submission) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
+          ConnectivityService? connectivity;
+          try {
+            connectivity = context.read<ConnectivityService>();
+          } catch (_) {
+            connectivity = null;
+          }
+
+          final isOffline =
+              (connectivity != null && !connectivity.isOnline) ||
+              (state.lastException != null &&
+                  (state.lastException!.isNetworkError ||
+                      state.lastException!.isTimeout));
+
+          if (isOffline) {
+            OfflineBlockedSheet.show(
+              context,
+              action: OfflineBlockedAction.createLot,
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage!),
+                backgroundColor: Colors.red.shade700,
+              ),
+            );
+          }
         } else if (state.status == NewLotStatus.success &&
             state.createdLot != null) {
           Navigator.pushNamed(
@@ -359,8 +381,10 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 onTap: () => LanguageAudioSheet.show(context),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F5E9),
@@ -372,8 +396,11 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.language,
-                          size: 15, color: Color(0xFF2E7D32)),
+                      const Icon(
+                        Icons.language,
+                        size: 15,
+                        color: Color(0xFF2E7D32),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         context.currentLanguage.nativeLabel,
@@ -599,7 +626,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                         ? 'कबाडी सामग्रीचे विश्लेषण सुरू आहे'
                         : 'कबाड़ की सामग्री विश्लेषित की जा रही है',
                     style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF15803D)),
+                      fontSize: 12,
+                      color: Color(0xFF15803D),
+                    ),
                   ),
                 ],
               ),
@@ -647,7 +676,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                         ? 'तुम्ही खाली स्क्रॅपचा प्रकार स्वतः निवडू शकता.'
                         : 'आप नीचे कबाड़ का प्रकार खुद चुन सकते हैं।',
                     style: const TextStyle(
-                        fontSize: 13, color: Color(0xFF78350F)),
+                      fontSize: 13,
+                      color: Color(0xFF78350F),
+                    ),
                   ),
                 ],
               ),
@@ -750,7 +781,8 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           runSpacing: 8,
           children: _categories.map((cat) {
             final categoryDisplay = _getCategoryDisplay(cat.labelKey);
-            final isSelected = state.category != null &&
+            final isSelected =
+                state.category != null &&
                 (state.category!.toLowerCase() == cat.value.toLowerCase() ||
                     state.category!.toLowerCase() ==
                         categoryDisplay.toLowerCase());
@@ -1021,8 +1053,10 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   context.isMarathi
                       ? 'किंमत काढली जात आहे...'
                       : 'कीमत का अनुमान लगाया जा रहा है...',
-                  style:
-                      const TextStyle(fontSize: 14, color: Color(0xFF555555)),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF555555),
+                  ),
                 ),
               ],
             )
@@ -1110,6 +1144,21 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           child: ElevatedButton.icon(
             onPressed: (isFormValid && !isSubmitting)
                 ? () {
+                    ConnectivityService? connectivity;
+                    try {
+                      connectivity = context.read<ConnectivityService>();
+                    } catch (_) {
+                      connectivity = null;
+                    }
+
+                    if (connectivity != null && !connectivity.isOnline) {
+                      OfflineBlockedSheet.show(
+                        context,
+                        action: OfflineBlockedAction.createLot,
+                      );
+                      return;
+                    }
+
                     final loc = _resolveLocation(context);
                     context.read<NewLotBloc>().add(
                       NewLotSubmitted(

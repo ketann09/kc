@@ -23,6 +23,10 @@ class CollectorTransactionsLoaded extends CollectorTransactionsState {
   final double pendingEarnings;
   final int completedCount;
   final String? statusFilter;
+  final bool isOffline;
+  final bool isRefreshing;
+  final DateTime? cachedAt;
+  final String? refreshError;
 
   const CollectorTransactionsLoaded({
     required this.transactions,
@@ -30,6 +34,10 @@ class CollectorTransactionsLoaded extends CollectorTransactionsState {
     required this.pendingEarnings,
     required this.completedCount,
     this.statusFilter,
+    this.isOffline = false,
+    this.isRefreshing = false,
+    this.cachedAt,
+    this.refreshError,
   });
 
   CollectorTransactionsLoaded copyWith({
@@ -38,6 +46,10 @@ class CollectorTransactionsLoaded extends CollectorTransactionsState {
     double? pendingEarnings,
     int? completedCount,
     String? statusFilter,
+    bool? isOffline,
+    bool? isRefreshing,
+    DateTime? cachedAt,
+    String? refreshError,
   }) {
     return CollectorTransactionsLoaded(
       transactions: transactions ?? this.transactions,
@@ -45,6 +57,10 @@ class CollectorTransactionsLoaded extends CollectorTransactionsState {
       pendingEarnings: pendingEarnings ?? this.pendingEarnings,
       completedCount: completedCount ?? this.completedCount,
       statusFilter: statusFilter ?? this.statusFilter,
+      isOffline: isOffline ?? this.isOffline,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+      cachedAt: cachedAt ?? this.cachedAt,
+      refreshError: refreshError ?? this.refreshError,
     );
   }
 
@@ -55,14 +71,19 @@ class CollectorTransactionsLoaded extends CollectorTransactionsState {
     pendingEarnings,
     completedCount,
     statusFilter,
+    isOffline,
+    isRefreshing,
+    cachedAt,
+    refreshError,
   ];
 }
 
 class CollectorTransactionsFailure extends CollectorTransactionsState {
   final String message;
+  final bool isOffline;
 
-  const CollectorTransactionsFailure(this.message);
+  const CollectorTransactionsFailure(this.message, {this.isOffline = false});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isOffline];
 }

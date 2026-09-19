@@ -39,7 +39,7 @@ class SharedPreferencesAuthTokenStorage implements AuthTokenStorage {
   final SharedPreferences? _prefsInstance;
 
   SharedPreferencesAuthTokenStorage({SharedPreferences? prefs})
-      : _prefsInstance = prefs;
+    : _prefsInstance = prefs;
 
   Future<SharedPreferences> _getPrefs() async {
     return _prefsInstance ?? await SharedPreferences.getInstance();

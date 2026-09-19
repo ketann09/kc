@@ -5,7 +5,9 @@ import '../../core/bloc/accessibility/accessibility_bloc.dart';
 import '../../core/bloc/accessibility/accessibility_event.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/network/api_client.dart';
+import '../../core/storage/read_cache_storage.dart';
 import '../../core/widgets/language_audio_sheet.dart';
+import '../../core/widgets/offline_stale_banner.dart';
 import '../../domain/entities/lot_entity.dart';
 import '../../domain/entities/material_entity.dart';
 import 'collector_dependency_container.dart';
@@ -30,8 +32,13 @@ class CollectorDashboardScreen extends StatelessWidget {
           } catch (_) {
             apiClient = ApiClient();
           }
+          ReadCacheStorage? readCache;
+          try {
+            readCache = ctx.read<ReadCacheStorage>();
+          } catch (_) {}
           final container = CollectorDependencyContainer.fromApiClient(
             apiClient,
+            readCacheStorage: readCache,
           );
           return container.createCollectorLotsBloc()
             ..add(const CollectorDashboardInitRequested());
@@ -295,7 +302,21 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
-                    _buildHeader(context, recentLots),
+                    _buildHeader(
+                      context,
+                      recentLots,
+                      isOffline: state is CollectorDashboardLoaded && state.isOffline,
+                    ),
+                    if (state is CollectorDashboardLoaded && state.isOffline) ...[
+                      const SizedBox(height: 12),
+                      OfflineStaleBanner(
+                        cachedAt: state.cachedAt,
+                        isRefreshing: state.isRefreshing,
+                        onRefresh: () => context.read<CollectorLotsBloc>().add(
+                          const CollectorDashboardInitRequested(),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     _buildRecentLotsSection(context, recentLots),
                     const SizedBox(height: 28),
@@ -313,7 +334,11 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, List<LotEntity> recentLots) {
+  Widget _buildHeader(
+    BuildContext context,
+    List<LotEntity> recentLots, {
+    bool isOffline = false,
+  }) {
     final l10n = context.l10n;
 
     return Row(
@@ -410,8 +435,9 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
         ),
         IconButton(
           onPressed: () {
+            final offlinePrefix = isOffline ? '${l10n.offlineStaleNotice}। ' : '';
             final speechText =
-                '${l10n.welcomeGreeting}. ${l10n.todayRatesTitle}. ${recentLots.length} ${l10n.myRecentLots}.';
+                '$offlinePrefix${l10n.welcomeGreeting}. ${l10n.todayRatesTitle}. ${recentLots.length} ${l10n.myRecentLots}.';
             try {
               context.read<AccessibilityBloc>().add(
                     AccessibilitySpeakRequested(speechText, force: true),

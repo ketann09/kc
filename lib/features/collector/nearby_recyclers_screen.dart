@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/localization/app_localizations.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/widgets/language_audio_sheet.dart';
+import '../../core/widgets/offline_blocked_sheet.dart';
 import '../../core/widgets/speaker_button.dart';
 import '../../domain/entities/matched_recycler_entity.dart';
 import 'collector_dependency_container.dart';
@@ -764,6 +766,22 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
           ),
           ElevatedButton(
             onPressed: () {
+              ConnectivityService? connectivity;
+              try {
+                connectivity = context.read<ConnectivityService>();
+              } catch (_) {
+                connectivity = null;
+              }
+
+              if (connectivity != null && !connectivity.isOnline) {
+                Navigator.pop(dialogContext);
+                OfflineBlockedSheet.show(
+                  context,
+                  action: OfflineBlockedAction.confirmOffer,
+                );
+                return;
+              }
+
               Navigator.pop(dialogContext);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -820,6 +838,21 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
             onPressed: selected == null
                 ? null
                 : () {
+                    ConnectivityService? connectivity;
+                    try {
+                      connectivity = context.read<ConnectivityService>();
+                    } catch (_) {
+                      connectivity = null;
+                    }
+
+                    if (connectivity != null && !connectivity.isOnline) {
+                      OfflineBlockedSheet.show(
+                        context,
+                        action: OfflineBlockedAction.confirmOffer,
+                      );
+                      return;
+                    }
+
                     _showConfirmationDialog(context, selected, state.lotId);
                   },
             style: ElevatedButton.styleFrom(

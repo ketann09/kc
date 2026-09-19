@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/network/api_exception.dart';
 import '../../../../domain/entities/transaction_entity.dart';
 
 abstract class TransactionDetailsState extends Equatable {
@@ -23,6 +24,7 @@ class TransactionDetailsLoaded extends TransactionDetailsState {
   final bool isSubmittingPayment;
   final String? actionSuccessMessage;
   final String? actionErrorMessage;
+  final ApiException? lastActionException;
 
   const TransactionDetailsLoaded(
     this.transaction, {
@@ -30,6 +32,7 @@ class TransactionDetailsLoaded extends TransactionDetailsState {
     this.isSubmittingPayment = false,
     this.actionSuccessMessage,
     this.actionErrorMessage,
+    this.lastActionException,
   });
 
   TransactionDetailsLoaded copyWith({
@@ -38,6 +41,8 @@ class TransactionDetailsLoaded extends TransactionDetailsState {
     bool? isSubmittingPayment,
     String? actionSuccessMessage,
     String? actionErrorMessage,
+    ApiException? lastActionException,
+    bool clearLastActionException = false,
   }) {
     return TransactionDetailsLoaded(
       transaction ?? this.transaction,
@@ -45,6 +50,9 @@ class TransactionDetailsLoaded extends TransactionDetailsState {
       isSubmittingPayment: isSubmittingPayment ?? this.isSubmittingPayment,
       actionSuccessMessage: actionSuccessMessage,
       actionErrorMessage: actionErrorMessage,
+      lastActionException: clearLastActionException
+          ? null
+          : (lastActionException ?? this.lastActionException),
     );
   }
 
@@ -60,8 +68,9 @@ class TransactionDetailsLoaded extends TransactionDetailsState {
 
 class TransactionDetailsFailure extends TransactionDetailsState {
   final String message;
+  final ApiException? lastException;
 
-  const TransactionDetailsFailure(this.message);
+  const TransactionDetailsFailure(this.message, {this.lastException});
 
   @override
   List<Object?> get props => [message];
