@@ -55,7 +55,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthLoading());
     try {
-      final user = await authRepository.register(
+      await authRepository.register(
         fullName: event.fullName,
         phoneNumber: event.phoneNumber,
         password: event.password,
@@ -64,12 +64,41 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         address: event.address,
         profilePicturePath: event.profilePicturePath,
       );
-      emit(AuthRegistrationSuccess(user));
     } on ApiException catch (e) {
-      emit(AuthFailure(e.message));
+      emit(AuthFailure(_mapAuthErrorMessage(e.message)));
+      return;
     } catch (e) {
       emit(AuthFailure(e.toString()));
+      return;
     }
+
+    // Registration succeeded. Auto-login to obtain JWT tokens and establish session.
+    try {
+      final session = await authRepository.login(
+        phoneNumber: event.phoneNumber,
+        password: event.password,
+      );
+      emit(Authenticated(session.user));
+    } catch (_) {
+      // Auto-login failed after successful registration.
+      // Do NOT retry registration. Show clear fallback guidance.
+      emit(
+        const AuthFailure(
+          'खाता बन गया है, कृपया मोबाइल नंबर और पासवर्ड से लॉग इन करें',
+        ),
+      );
+    }
+  }
+
+  String _mapAuthErrorMessage(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('already exists')) {
+      return 'इस मोबाइल नंबर या ईमेल से खाता पहले से मौजूद है';
+    }
+    if (lower.contains('required')) {
+      return 'कृपया सभी आवश्यक फ़ील्ड भरें';
+    }
+    return message;
   }
 
   Future<void> _onAuthLogoutRequested(

@@ -251,48 +251,70 @@ void main() {
       );
     });
 
-    testWidgets('Tapping bottom action button navigates to /accept-offer with real data', (
-      tester,
-    ) async {
-      Map<String, dynamic>? navigatedArgs;
+    testWidgets(
+      'Tapping bottom action button opens confirmation dialog and confirms to /collector-lot-details',
+      (tester) async {
+        Map<String, dynamic>? navigatedArgs;
 
-      matchmakingBloc.emit(
-        MatchmakingLoaded(
-          lotId: 'lot_test_123',
-          matches: [fakeRepo.testRecycler1],
-          bestMatch: fakeRepo.testRecycler1,
-          selectedRecycler: fakeRepo.testRecycler1,
-        ),
-      );
+        matchmakingBloc.emit(
+          MatchmakingLoaded(
+            lotId: 'lot_test_123',
+            matches: [fakeRepo.testRecycler1],
+            bestMatch: fakeRepo.testRecycler1,
+            selectedRecycler: fakeRepo.testRecycler1,
+          ),
+        );
 
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          routes: {
-            '/accept-offer': (context) {
-              navigatedArgs =
-                  ModalRoute.of(context)?.settings.arguments
-                      as Map<String, dynamic>?;
-              return const Scaffold(body: Text('Accept Offer Target'));
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            routes: {
+              '/collector-lot-details': (context) {
+                navigatedArgs =
+                    ModalRoute.of(context)?.settings.arguments
+                        as Map<String, dynamic>?;
+                return const Scaffold(
+                  body: Text('Collector Lot Details Target'),
+                );
+              },
             },
-          },
-        ),
-      );
-      await tester.pumpAndSettle();
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      final confirmBtn = find.text(
-        'ऑफर की पुष्टि करें (Green Tech Recyclers)',
-      );
-      expect(confirmBtn, findsOneWidget);
-      await tester.tap(confirmBtn);
-      await tester.pumpAndSettle();
+        final confirmBtn = find.text(
+          'ऑफर की पुष्टि करें (Green Tech Recyclers)',
+        );
+        expect(confirmBtn, findsOneWidget);
+        await tester.tap(confirmBtn);
+        await tester.pumpAndSettle();
 
-      expect(find.text('Accept Offer Target'), findsOneWidget);
-      expect(navigatedArgs, isNotNull);
-      expect(navigatedArgs!['recyclerName'], equals('Green Tech Recyclers'));
-      expect(navigatedArgs!['offerPrice'], equals(300.0));
-      expect(navigatedArgs!['lotId'], equals('lot_test_123'));
-      expect(navigatedArgs!['recyclerId'], equals('rec_001'));
-      expect(navigatedArgs!['pickup'], isTrue);
-    });
+        // Confirmation dialog appears
+        expect(find.text('रीसाइक्लर की पुष्टि करें'), findsOneWidget);
+        expect(
+          find.text(
+            'क्या आप Green Tech Recyclers को यह लॉट सौंपने का अनुरोध भेजना चाहते हैं?',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('₹300'), findsWidgets);
+
+        // Tap confirm in dialog
+        final dialogConfirmBtn = find.widgetWithText(
+          ElevatedButton,
+          'पुष्टि करें',
+        );
+        expect(dialogConfirmBtn, findsOneWidget);
+        await tester.tap(dialogConfirmBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Collector Lot Details Target'), findsOneWidget);
+        expect(navigatedArgs, isNotNull);
+        expect(navigatedArgs!['lotId'], equals('lot_test_123'));
+        expect(
+          find.text('रीसाइक्लर को अनुरोध भेज दिया गया है!'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

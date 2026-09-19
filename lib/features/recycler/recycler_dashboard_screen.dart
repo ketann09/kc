@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/widgets/language_audio_sheet.dart';
+import '../../../core/widgets/speaker_button.dart';
 import '../../../domain/entities/lot_entity.dart';
 import '../authentication/presentation/bloc/auth_bloc.dart';
 import '../authentication/presentation/bloc/auth_state.dart';
@@ -84,14 +87,59 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text(
-          'नए लॉट अनुरोध',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Text(
+          l10n.newLotRequests,
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         centerTitle: false,
+        actions: [
+          InkWell(
+            onTap: () => LanguageAudioSheet.show(context),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.language,
+                      size: 15, color: Color(0xFF2E7D32)),
+                  const SizedBox(width: 4),
+                  Text(
+                    context.currentLanguage.nativeLabel,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          BlocBuilder<RecyclerDashboardBloc, RecyclerDashboardState>(
+            builder: (context, state) {
+              final count =
+                  state is RecyclerDashboardLoaded ? state.lots.length : 0;
+              return SpeakerButton(
+                textToSpeak: '${l10n.newLotRequests}. $count ${l10n.allLots}.',
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: BlocBuilder<RecyclerDashboardBloc, RecyclerDashboardState>(
@@ -114,15 +162,17 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
   }
 
   Widget _buildLoadingState() {
-    return const Center(
+    final l10n = context.l10n;
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Color(0xFF147A65), strokeWidth: 3),
-          SizedBox(height: 20),
+          const CircularProgressIndicator(
+              color: Color(0xFF147A65), strokeWidth: 3),
+          const SizedBox(height: 20),
           Text(
-            'लॉट लोड हो रहे हैं...',
-            style: TextStyle(
+            l10n.lotsLoading,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: Color(0xFF191919),
@@ -134,6 +184,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
   }
 
   Widget _buildFailureState(BuildContext context, String message) {
+    final l10n = context.l10n;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -153,9 +204,9 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'लॉट लोड करने में समस्या',
-              style: TextStyle(
+            Text(
+              l10n.recyclerLotsLoadError,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF191919),
@@ -175,7 +226,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
                 );
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('पुनः प्रयास करें'),
+              label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF147A65),
                 foregroundColor: Colors.white,
@@ -195,6 +246,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final l10n = context.l10n;
     return Center(
       child: RefreshIndicator(
         color: const Color(0xFF147A65),
@@ -222,20 +274,22 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'अभी कोई नया लॉट नहीं है',
+            Text(
+              l10n.noLotsAvailable,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF191919),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'नए लॉट अनुरोध यहाँ दिखाई देंगे।',
+            Text(
+              context.isMarathi
+                  ? 'नवीन लॉटच्या विनंत्या येथे दिसतील.'
+                  : 'नए लॉट अनुरोध यहाँ दिखाई देंगे।',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ),
             const SizedBox(height: 24),
             Center(
@@ -246,7 +300,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
                   );
                 },
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('रिफ्रेश करें'),
+                label: Text(l10n.refreshAction),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF147A65),
                   side: const BorderSide(color: Color(0xFF147A65)),
@@ -263,6 +317,8 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
   }
 
   Widget _buildLotsList(BuildContext context, List<LotEntity> lots) {
+    final l10n = context.l10n;
+
     return RefreshIndicator(
       color: const Color(0xFF147A65),
       onRefresh: () async {
@@ -275,11 +331,11 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
         itemCount: lots.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
-            return const Padding(
-              padding: EdgeInsets.only(bottom: 16),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
               child: Text(
-                'आपके पास आने वाले कलेक्टर के लॉट',
-                style: TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
+                l10n.incomingLotsSubtitle,
+                style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
               ),
             );
           }
@@ -312,62 +368,67 @@ class _LotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     final materialTitle =
         (lot.materialName != null && lot.materialName!.isNotEmpty)
-        ? lot.materialName!
-        : (lot.mlPrediction?.predictedCategory != null &&
-              lot.mlPrediction!.predictedCategory!.isNotEmpty)
-        ? lot.mlPrediction!.predictedCategory!
-        : (lot.description != null && lot.description!.isNotEmpty)
-        ? lot.description!
-        : 'स्क्रैप लॉट';
+            ? lot.materialName!
+            : (lot.mlPrediction?.predictedCategory != null &&
+                    lot.mlPrediction!.predictedCategory!.isNotEmpty)
+                ? lot.mlPrediction!.predictedCategory!
+                : (lot.description != null && lot.description!.isNotEmpty)
+                    ? lot.description!
+                    : (context.isMarathi ? 'स्क्रॅप लॉट' : 'स्क्रैप लॉट');
 
     final priceText = lot.estimatedPrice > 0
         ? '₹${lot.estimatedPrice.toStringAsFixed(0)}'
-        : 'मूल्य प्रतीक्षित';
+        : (context.isMarathi ? 'किंमत प्रतीक्षेत' : 'मूल्य प्रतीक्षित');
 
     final weight = lot.actualWeight ?? lot.estimatedWeight;
-    final weightText = weight >= 1.0
-        ? '${weight.toStringAsFixed(weight % 1 == 0 ? 0 : 1)} किलो'
-        : '${(weight * 1000).toStringAsFixed(0)} ग्राम';
+    final unit = context.l10n.kgUnit;
+    final weightText =
+        '${weight.toStringAsFixed(weight % 1 == 0 ? 0 : 1)} $unit';
 
     final collectorInfo =
         (lot.collectorName != null && lot.collectorName!.isNotEmpty)
-        ? '${lot.collectorName!} द्वारा भेजा गया'
-        : 'कलेक्टर द्वारा भेजा गया';
+            ? (context.isMarathi
+                ? '${lot.collectorName!} कडून पाठवले'
+                : '${lot.collectorName!} द्वारा भेजा गया')
+            : (context.isMarathi
+                ? 'कलेक्टरकडून पाठवले'
+                : 'कलेक्टर द्वारा भेजा गया');
 
     final locationText =
         (lot.location.city != null && lot.location.city!.isNotEmpty)
-        ? (lot.location.state != null && lot.location.state!.isNotEmpty
-              ? '${lot.location.city}, ${lot.location.state}'
-              : lot.location.city!)
-        : (lot.location.address != null && lot.location.address!.isNotEmpty
-              ? lot.location.address!
-              : null);
+            ? (lot.location.state != null && lot.location.state!.isNotEmpty
+                ? '${lot.location.city}, ${lot.location.state}'
+                : lot.location.city!)
+            : (lot.location.address != null && lot.location.address!.isNotEmpty
+                ? lot.location.address!
+                : null);
 
     final isPickup = lot.schedulePickup != null;
 
-    String statusHindi;
+    String statusText;
     switch (lot.status) {
       case LotStatus.pending:
-        statusHindi = 'लंबित';
+        statusText = l10n.statusPending;
         break;
       case LotStatus.accepted:
-        statusHindi = 'स्वीकृत';
+        statusText = l10n.statusAccepted;
         break;
       case LotStatus.picked:
-        statusHindi = 'पिक किया गया';
+        statusText = l10n.statusPicked;
         break;
       case LotStatus.delivered:
-        statusHindi = 'डिलीवर किया गया';
+        statusText = l10n.statusDelivered;
         break;
       case LotStatus.completed:
-        statusHindi = 'पूर्ण';
+        statusText = l10n.statusCompleted;
         break;
       case LotStatus.cancelled:
-        statusHindi = 'रद्द';
+        statusText = l10n.statusCancelled;
         break;
     }
 
@@ -410,7 +471,7 @@ class _LotCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            statusHindi,
+                            statusText,
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -473,7 +534,9 @@ class _LotCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 7),
                   Text(
-                    isPickup ? 'पिकअप अनुरोध' : 'ड्रॉप-ऑफ',
+                    isPickup
+                        ? (context.isMarathi ? 'पिकअप विनंती' : 'पिकअप अनुरोध')
+                        : (context.isMarathi ? 'ड्रॉप-ऑफ' : 'ड्रॉप-ऑफ'),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

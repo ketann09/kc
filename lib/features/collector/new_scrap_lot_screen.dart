@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/localization/app_localizations.dart';
 import '../../core/network/api_client.dart';
+import '../../core/widgets/language_audio_sheet.dart';
+import '../../core/widgets/speaker_button.dart';
 import '../../domain/entities/lot_entity.dart';
 import '../authentication/presentation/bloc/auth_bloc.dart';
 import '../authentication/presentation/bloc/auth_state.dart';
@@ -18,8 +21,6 @@ class NewScrapLotScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If a NewLotBloc is already provided above (e.g. in tests or parent scope), use it.
-    // Otherwise provide a fresh instance using CollectorDependencyContainer.
     try {
       context.read<NewLotBloc>();
       return const _NewScrapLotView();
@@ -51,12 +52,12 @@ class _NewScrapLotView extends StatefulWidget {
 }
 
 class _CategoryOption {
-  final String label;
+  final String labelKey;
   final String value;
   final IconData icon;
 
   const _CategoryOption({
-    required this.label,
+    required this.labelKey,
     required this.value,
     required this.icon,
   });
@@ -68,33 +69,37 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
 
   static const List<_CategoryOption> _categories = [
     _CategoryOption(
-      label: 'प्लास्टिक',
+      labelKey: 'plastic',
       value: 'Plastic',
       icon: Icons.recycling_rounded,
     ),
     _CategoryOption(
-      label: 'ई-वेस्ट',
+      labelKey: 'pcb',
       value: 'E-Waste',
       icon: Icons.memory_rounded,
     ),
     _CategoryOption(
-      label: 'धातु / लोहा',
+      labelKey: 'metal',
       value: 'Metal',
       icon: Icons.construction_rounded,
     ),
     _CategoryOption(
-      label: 'कागज़',
+      labelKey: 'paper',
       value: 'Paper',
       icon: Icons.description_rounded,
     ),
     _CategoryOption(
-      label: 'बैटरी',
+      labelKey: 'battery',
       value: 'Battery',
       icon: Icons.battery_full_rounded,
     ),
-    _CategoryOption(label: 'केबल', value: 'Cable', icon: Icons.cable_rounded),
     _CategoryOption(
-      label: 'अन्य',
+      labelKey: 'cable',
+      value: 'Cable',
+      icon: Icons.cable_rounded,
+    ),
+    _CategoryOption(
+      labelKey: 'other',
       value: 'Other',
       icon: Icons.category_rounded,
     ),
@@ -181,6 +186,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
   }
 
   void _showPhotoOptions() {
+    final l10n = context.l10n;
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -194,11 +200,15 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
-                    'फोटो का स्रोत चुनें',
-                    style: TextStyle(
+                    context.isMarathi
+                        ? 'फोटोचा स्रोत निवडा'
+                        : context.isEnglish
+                            ? 'Select Photo Source'
+                            : 'फोटो का स्रोत चुनें',
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF191919),
@@ -214,8 +224,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                       color: Color(0xFF176B45),
                     ),
                   ),
-                  title: const Text('कैमरा (Camera)'),
-                  subtitle: const Text('सीधे कबाड़ की नई फोटो लें'),
+                  title: Text(l10n.camera),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickImage(ImageSource.camera);
@@ -229,8 +238,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                       color: Color(0xFF176B45),
                     ),
                   ),
-                  title: const Text('गैलरी (Gallery)'),
-                  subtitle: const Text('फोन से पहले से मौजूद फोटो चुनें'),
+                  title: Text(l10n.gallery),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickImage(ImageSource.gallery);
@@ -264,8 +272,31 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
     );
   }
 
+  String _getCategoryDisplay(String key) {
+    final l10n = context.l10n;
+    switch (key) {
+      case 'plastic':
+        return l10n.categoryPlastic;
+      case 'pcb':
+        return l10n.categoryEwaste;
+      case 'metal':
+        return l10n.categoryMetal;
+      case 'paper':
+        return l10n.categoryPaper;
+      case 'battery':
+        return l10n.categoryBattery;
+      case 'cable':
+        return l10n.categoryCable;
+      case 'other':
+      default:
+        return l10n.categoryOther;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return BlocConsumer<NewLotBloc, NewLotState>(
       listenWhen: (previous, current) =>
           previous.status != current.status ||
@@ -302,20 +333,20 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               ),
               onPressed: () => Navigator.pop(context),
             ),
-            title: const Column(
+            title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'नया कबाड़ जोड़ें',
-                  style: TextStyle(
+                  l10n.createNewLot,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF191919),
                   ),
                 ),
                 Text(
-                  'फोटो लें और AI से कबाड़ की पहचान करें',
-                  style: TextStyle(
+                  l10n.takePhotoAi,
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
                     color: Color(0xFF666666),
@@ -323,6 +354,45 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 ),
               ],
             ),
+            actions: [
+              InkWell(
+                onTap: () => LanguageAudioSheet.show(context),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.language,
+                          size: 15, color: Color(0xFF2E7D32)),
+                      const SizedBox(width: 4),
+                      Text(
+                        context.currentLanguage.nativeLabel,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2E7D32),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SpeakerButton(
+                textToSpeak:
+                    '${l10n.createNewLot}. ${l10n.takeScrapPhoto}. ${l10n.weight}. ${l10n.estimatedPrice}.',
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           body: SafeArea(
             child: Column(
@@ -355,6 +425,8 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
   }
 
   Widget _buildPhotoSection(NewLotState state) {
+    final l10n = context.l10n;
+
     if (state.imagePath != null && state.imagePath!.isNotEmpty) {
       final file = File(state.imagePath!);
       return Column(
@@ -390,9 +462,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 size: 18,
                 color: Color(0xFF176B45),
               ),
-              label: const Text(
-                'फोटो बदलें',
-                style: TextStyle(
+              label: Text(
+                l10n.changePhoto,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF176B45),
@@ -428,19 +500,19 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'कबाड़ की फोटो लें',
-            style: TextStyle(
+          Text(
+            l10n.takeScrapPhoto,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: Color(0xFF191919),
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'साफ़ फोटो से AI बेहतर पहचान कर पाएगा',
+          Text(
+            l10n.takeScrapPhotoSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Color(0xFF777777)),
+            style: const TextStyle(fontSize: 13, color: Color(0xFF777777)),
           ),
           const SizedBox(height: 20),
           Row(
@@ -449,7 +521,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 child: OutlinedButton.icon(
                   onPressed: () => _pickImage(ImageSource.camera),
                   icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                  label: const Text('कैमरा'),
+                  label: Text(l10n.camera),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF176B45),
                     side: const BorderSide(color: Color(0xFF176B45)),
@@ -465,7 +537,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 child: OutlinedButton.icon(
                   onPressed: () => _pickImage(ImageSource.gallery),
                   icon: const Icon(Icons.photo_library_outlined, size: 18),
-                  label: const Text('गैलरी'),
+                  label: Text(l10n.gallery),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF374151),
                     side: const BorderSide(color: Color(0xFFD1D5DB)),
@@ -484,6 +556,8 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
   }
 
   Widget _buildClassificationCard(NewLotState state) {
+    final l10n = context.l10n;
+
     if (state.imagePath == null) return const SizedBox.shrink();
 
     if (state.status == NewLotStatus.classifying) {
@@ -496,9 +570,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFBBF7D0)),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            SizedBox(
+            const SizedBox(
               width: 22,
               height: 22,
               child: CircularProgressIndicator(
@@ -506,23 +580,26 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 color: Color(0xFF176B45),
               ),
             ),
-            SizedBox(width: 14),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'AI पहचान रहा है...',
-                    style: TextStyle(
+                    l10n.aiClassifying,
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF176B45),
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    'कबाड़ की सामग्री विश्लेषित की जा रही है',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF15803D)),
+                    context.isMarathi
+                        ? 'कबाडी सामग्रीचे विश्लेषण सुरू आहे'
+                        : 'कबाड़ की सामग्री विश्लेषित की जा रही है',
+                    style: const TextStyle(
+                        fontSize: 12, color: Color(0xFF15803D)),
                   ),
                 ],
               ),
@@ -543,31 +620,34 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFFDE68A)),
         ),
-        child: const Row(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
+            const Icon(
               Icons.info_outline_rounded,
               color: Color(0xFFD97706),
               size: 24,
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'पहचान नहीं हो सकी',
-                    style: TextStyle(
+                    l10n.aiFailed,
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFFB45309),
                     ),
                   ),
-                  SizedBox(height: 3),
+                  const SizedBox(height: 3),
                   Text(
-                    'आप नीचे कबाड़ का प्रकार खुद चुन सकते हैं।',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF78350F)),
+                    context.isMarathi
+                        ? 'तुम्ही खाली स्क्रॅपचा प्रकार स्वतः निवडू शकता.'
+                        : 'आप नीचे कबाड़ का प्रकार खुद चुन सकते हैं।',
+                    style: const TextStyle(
+                        fontSize: 13, color: Color(0xFF78350F)),
                   ),
                 ],
               ),
@@ -592,9 +672,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
             Container(
               width: 46,
               height: 46,
-              decoration: BoxDecoration(
-                color: const Color(0x26176B45),
-                borderRadius: BorderRadius.circular(12),
+              decoration: const BoxDecoration(
+                color: Color(0x26176B45),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
               child: const Icon(
                 Icons.auto_awesome,
@@ -607,9 +687,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'AI से पहचान',
-                    style: TextStyle(
+                  Text(
+                    l10n.aiIdentified,
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF176B45),
@@ -634,7 +714,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                '${state.classification!.confidencePercent.toInt()}% विश्वास',
+                '${state.classification!.confidencePercent.toInt()}% ${l10n.confidence}',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -651,12 +731,14 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
   }
 
   Widget _buildCategorySelector(NewLotState state) {
+    final l10n = context.l10n;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'कबाड़ का प्रकार',
-          style: TextStyle(
+        Text(
+          l10n.scrapType,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: Color(0xFF191919),
@@ -667,10 +749,11 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           spacing: 8,
           runSpacing: 8,
           children: _categories.map((cat) {
-            final isSelected =
-                state.category != null &&
+            final categoryDisplay = _getCategoryDisplay(cat.labelKey);
+            final isSelected = state.category != null &&
                 (state.category!.toLowerCase() == cat.value.toLowerCase() ||
-                    state.category!.toLowerCase() == cat.label.toLowerCase());
+                    state.category!.toLowerCase() ==
+                        categoryDisplay.toLowerCase());
 
             return InkWell(
               onTap: () {
@@ -711,7 +794,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      cat.label,
+                      categoryDisplay,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: isSelected
@@ -733,12 +816,14 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
   }
 
   Widget _buildWeightSection(NewLotState state) {
+    final l10n = context.l10n;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'वज़न',
-          style: TextStyle(
+        Text(
+          l10n.weight,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: Color(0xFF191919),
@@ -861,6 +946,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
   }
 
   Widget _buildPriceCard(NewLotState state) {
+    final l10n = context.l10n;
     final hasPrice = state.priceEstimate != null;
     final isPricing = state.status == NewLotStatus.pricing;
 
@@ -880,9 +966,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'अनुमानित कीमत',
-                style: TextStyle(
+              Text(
+                l10n.estimatedPrice,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF191919),
@@ -920,9 +1006,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           ),
           const SizedBox(height: 10),
           if (isPricing)
-            const Row(
+            Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
@@ -930,21 +1016,33 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                     color: Color(0xFF176B45),
                   ),
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Text(
-                  'कीमत का अनुमान लगाया जा रहा है...',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF555555)),
+                  context.isMarathi
+                      ? 'किंमत काढली जात आहे...'
+                      : 'कीमत का अनुमान लगाया जा रहा है...',
+                  style:
+                      const TextStyle(fontSize: 14, color: Color(0xFF555555)),
                 ),
               ],
             )
           else if (hasPrice) ...[
-            Text(
-              '₹${state.priceEstimate!.estimatedValueInr.toStringAsFixed(0)}',
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF176B45),
-              ),
+            Row(
+              children: [
+                Text(
+                  '₹${state.priceEstimate!.estimatedValueInr.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF176B45),
+                  ),
+                ),
+                const Spacer(),
+                SpeakerButton(
+                  textToSpeak:
+                      '${l10n.estimatedPrice}: ₹${state.priceEstimate!.estimatedValueInr.toStringAsFixed(0)}',
+                ),
+              ],
             ),
             if (state.priceEstimate!.estimatedValueMinInr > 0 &&
                 state.priceEstimate!.estimatedValueMaxInr > 0) ...[
@@ -959,17 +1057,19 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               ),
             ],
           ] else
-            const Row(
+            Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.info_outline_rounded,
                   size: 20,
                   color: Color(0xFF888888),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
-                  'वज़न भरें और कीमत देखें',
-                  style: TextStyle(
+                  context.isMarathi
+                      ? 'वजन भरा आणि किंमत पहा'
+                      : 'वज़न भरें और कीमत देखें',
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF777777),
@@ -983,6 +1083,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
   }
 
   Widget _buildBottomBar(NewLotState state) {
+    final l10n = context.l10n;
     final isSubmitting = state.status == NewLotStatus.submitting;
     final hasImage = state.imagePath != null && state.imagePath!.isNotEmpty;
     final hasCategory = state.category != null && state.category!.isNotEmpty;
@@ -1030,7 +1131,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   )
                 : const Icon(Icons.search_rounded, size: 22),
             label: Text(
-              isSubmitting ? 'जमा हो रहा है...' : 'रीसाइक्लर खोजें',
+              isSubmitting
+                  ? (context.isMarathi ? 'जमा होत आहे...' : 'जमा हो रहा है...')
+                  : l10n.findRecyclers,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             style: ElevatedButton.styleFrom(

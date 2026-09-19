@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/localization/app_localizations.dart';
+import '../../core/widgets/language_audio_sheet.dart';
+import '../../core/widgets/speaker_button.dart';
 import '../../domain/entities/user_entity.dart';
 import '../authentication/presentation/bloc/auth_bloc.dart';
 import '../authentication/presentation/bloc/auth_event.dart';
@@ -26,13 +29,14 @@ class _MobileScreenState extends State<MobileScreen> {
   }
 
   void _login() {
+    final l10n = context.l10n;
     final mobile = _mobileController.text.trim();
     final password = _passwordController.text.trim();
 
     if (mobile.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('कृपया 10 अंकों का मोबाइल नंबर दर्ज करें'),
+        SnackBar(
+          content: Text(l10n.pleaseEnterValidPhone),
         ),
       );
       return;
@@ -40,8 +44,8 @@ class _MobileScreenState extends State<MobileScreen> {
 
     if (password.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('पासवर्ड कम से कम 6 अक्षरों का होना चाहिए'),
+        SnackBar(
+          content: Text(l10n.passwordMinLength),
         ),
       );
       return;
@@ -54,6 +58,8 @@ class _MobileScreenState extends State<MobileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthFailure) {
@@ -96,12 +102,57 @@ class _MobileScreenState extends State<MobileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 24),
+
+                  // Top Accessibility Action Bar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: () => LanguageAudioSheet.show(context),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFF2E7D32)
+                                  .withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.language,
+                                  size: 18, color: Color(0xFF2E7D32)),
+                              const SizedBox(width: 6),
+                              Text(
+                                context.currentLanguage.nativeLabel,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2E7D32),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SpeakerButton(
+                        textToSpeak:
+                            '${l10n.loginSubtitle}. ${l10n.loginTitle}. ${l10n.enterMobile}.',
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 28),
 
                   // Greeting
-                  const Text(
-                    'नमस्ते!',
-                    style: TextStyle(
+                  Text(
+                    l10n.loginSubtitle,
+                    style: const TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF191919),
@@ -112,9 +163,9 @@ class _MobileScreenState extends State<MobileScreen> {
                   const SizedBox(height: 16),
 
                   // Heading
-                  const Text(
-                    'लॉग इन करें',
-                    style: TextStyle(
+                  Text(
+                    l10n.loginTitle,
+                    style: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF191919),
@@ -124,9 +175,9 @@ class _MobileScreenState extends State<MobileScreen> {
 
                   const SizedBox(height: 36),
 
-                  const Text(
-                    'अपना मोबाइल नंबर दर्ज करें',
-                    style: TextStyle(
+                  Text(
+                    l10n.enterMobile,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF202020),
@@ -165,9 +216,9 @@ class _MobileScreenState extends State<MobileScreen> {
                               fontSize: 22,
                               fontWeight: FontWeight.w600,
                             ),
-                            decoration: const InputDecoration(
-                              hintText: '10 अंकों का नंबर',
-                              hintStyle: TextStyle(
+                            decoration: InputDecoration(
+                              hintText: l10n.mobileHint,
+                              hintStyle: const TextStyle(
                                 color: Color(0xFF858585),
                                 fontSize: 20,
                                 fontWeight: FontWeight.w500,
@@ -185,9 +236,9 @@ class _MobileScreenState extends State<MobileScreen> {
 
                   const SizedBox(height: 20),
 
-                  const Text(
-                    'पासवर्ड दर्ज करें',
-                    style: TextStyle(
+                  Text(
+                    l10n.enterPassword,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF202020),
@@ -225,9 +276,9 @@ class _MobileScreenState extends State<MobileScreen> {
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
                             ),
-                            decoration: const InputDecoration(
-                              hintText: 'पासवर्ड',
-                              hintStyle: TextStyle(
+                            decoration: InputDecoration(
+                              hintText: l10n.passwordHint,
+                              hintStyle: const TextStyle(
                                 color: Color(0xFF858585),
                                 fontSize: 20,
                                 fontWeight: FontWeight.w500,
@@ -284,14 +335,14 @@ class _MobileScreenState extends State<MobileScreen> {
                                 strokeWidth: 2.5,
                               ),
                             )
-                          : const Row(
+                          : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.login_rounded, size: 22),
-                                SizedBox(width: 10),
+                                const Icon(Icons.login_rounded, size: 22),
+                                const SizedBox(width: 10),
                                 Text(
-                                  'लॉग इन करें',
-                                  style: TextStyle(
+                                  l10n.loginAction,
+                                  style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -311,9 +362,9 @@ class _MobileScreenState extends State<MobileScreen> {
                           : () {
                               Navigator.pushNamed(context, '/role');
                             },
-                      child: const Text(
-                        'नया खाता बनाएं (रोल चुनें)',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.createNewAccount,
+                        style: const TextStyle(
                           color: Color(0xFF147A65),
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

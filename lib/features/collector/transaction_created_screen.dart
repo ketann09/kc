@@ -237,7 +237,10 @@ class TransactionCreatedScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(blurRadius: 10, color: Colors.black.withOpacity(0.08)),
+          BoxShadow(
+            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.08),
+          ),
         ],
       ),
       child: SafeArea(

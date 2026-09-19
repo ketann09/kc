@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/bloc/accessibility/accessibility_bloc.dart';
+import 'core/bloc/accessibility/accessibility_event.dart';
+import 'core/bloc/accessibility/accessibility_state.dart';
+import 'core/localization/app_localizations.dart';
 import 'core/network/api_client.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/tts_service.dart';
+import 'core/storage/accessibility_preferences_storage.dart';
 import 'core/storage/auth_token_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'data/datasources/remote/auth_remote_data_source.dart';
@@ -18,7 +24,16 @@ void main() {
 }
 
 class KabadiwalaConnectApp extends StatefulWidget {
-  const KabadiwalaConnectApp({super.key});
+  final AuthRepository? authRepository;
+  final AccessibilityPreferencesStorage? accessibilityStorage;
+  final TtsService? ttsService;
+
+  const KabadiwalaConnectApp({
+    super.key,
+    this.authRepository,
+    this.accessibilityStorage,
+    this.ttsService,
+  });
 
   @override
   State<KabadiwalaConnectApp> createState() => _KabadiwalaConnectAppState();
@@ -30,6 +45,9 @@ class _KabadiwalaConnectAppState extends State<KabadiwalaConnectApp> {
   late final AuthRemoteDataSource _remoteDataSource;
   late final AuthRepository _authRepository;
   late final AuthBloc _authBloc;
+  late final AccessibilityPreferencesStorage _accessibilityStorage;
+  late final TtsService _ttsService;
+  late final AccessibilityBloc _accessibilityBloc;
 
   @override
   void initState() {
@@ -37,18 +55,28 @@ class _KabadiwalaConnectAppState extends State<KabadiwalaConnectApp> {
     _apiClient = ApiClient();
     _tokenStorage = SharedPreferencesAuthTokenStorage();
     _remoteDataSource = AuthRemoteDataSourceImpl(apiClient: _apiClient);
-    _authRepository = AuthRepositoryImpl(
-      remoteDataSource: _remoteDataSource,
-      tokenStorage: _tokenStorage,
-      apiClient: _apiClient,
-    );
+    _authRepository = widget.authRepository ??
+        AuthRepositoryImpl(
+          remoteDataSource: _remoteDataSource,
+          tokenStorage: _tokenStorage,
+          apiClient: _apiClient,
+        );
     _authBloc = AuthBloc(authRepository: _authRepository)
       ..add(const AuthCheckRequested());
+
+    _accessibilityStorage =
+        widget.accessibilityStorage ?? SharedPreferencesAccessibilityStorage();
+    _ttsService = widget.ttsService ?? FlutterTtsServiceImpl();
+    _accessibilityBloc = AccessibilityBloc(
+      storage: _accessibilityStorage,
+      ttsService: _ttsService,
+    )..add(const AccessibilityInitialized());
   }
 
   @override
   void dispose() {
     _authBloc.close();
+    _accessibilityBloc.close();
     super.dispose();
   }
 
@@ -58,15 +86,28 @@ class _KabadiwalaConnectAppState extends State<KabadiwalaConnectApp> {
       providers: [
         RepositoryProvider<ApiClient>.value(value: _apiClient),
         RepositoryProvider<AuthRepository>.value(value: _authRepository),
+        RepositoryProvider<AccessibilityPreferencesStorage>.value(
+            value: _accessibilityStorage),
+        RepositoryProvider<TtsService>.value(value: _ttsService),
       ],
-      child: BlocProvider.value(
-        value: _authBloc,
-        child: MaterialApp(
-          title: 'Kabadiwala Connect',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          initialRoute: '/',
-          onGenerateRoute: AppRouter.generateRoute,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _authBloc),
+          BlocProvider.value(value: _accessibilityBloc),
+        ],
+        child: BlocBuilder<AccessibilityBloc, AccessibilityState>(
+          builder: (context, accessState) {
+            return AppLocalizationsWidget(
+              language: accessState.language,
+              child: MaterialApp(
+                title: 'Kabadiwala Connect',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme,
+                initialRoute: '/',
+                onGenerateRoute: AppRouter.generateRoute,
+              ),
+            );
+          },
         ),
       ),
     );

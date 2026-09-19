@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/widgets/language_audio_sheet.dart';
+import '../../../../core/widgets/speaker_button.dart';
 import '../../../../domain/entities/transaction_entity.dart';
 import '../../../transactions/presentation/screens/transaction_details_screen.dart';
 import '../../collector_dependency_container.dart';
@@ -50,20 +53,64 @@ class _CollectorTransactionsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return BlocProvider.value(
       value: _bloc,
       child: Scaffold(
         backgroundColor: const Color(0xFFF9FAFB),
         appBar: AppBar(
-          title: const Text(
-            'मेरी कमाई और लेन-देन',
-            style: TextStyle(fontWeight: FontWeight.w700),
+          title: Text(
+            l10n.myEarningsAndTransactions,
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           centerTitle: true,
           actions: [
+            InkWell(
+              onTap: () => LanguageAudioSheet.show(context),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.language,
+                        size: 15, color: Color(0xFF2E7D32)),
+                    const SizedBox(width: 4),
+                    Text(
+                      context.currentLanguage.nativeLabel,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            BlocBuilder<CollectorTransactionsBloc, CollectorTransactionsState>(
+              builder: (context, state) {
+                if (state is CollectorTransactionsLoaded) {
+                  return SpeakerButton(
+                    textToSpeak:
+                        '${l10n.myEarningsAndTransactions}. ${l10n.totalEarnings}: ₹${state.totalEarnings.toStringAsFixed(0)}. ${l10n.paymentPending}: ₹${state.pendingEarnings.toStringAsFixed(0)}.',
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'रिफ्रेश करें',
+              tooltip: l10n.retry,
               onPressed: () {
                 _bloc.add(const FetchCollectorTransactionsEvent(refresh: true));
               },
@@ -72,37 +119,36 @@ class _CollectorTransactionsScreenState
         ),
         body: SafeArea(
           child:
-              BlocBuilder<
-                CollectorTransactionsBloc,
-                CollectorTransactionsState
-              >(
-                builder: (context, state) {
-                  if (state is CollectorTransactionsLoading ||
-                      state is CollectorTransactionsInitial) {
-                    return _buildLoadingState();
-                  } else if (state is CollectorTransactionsFailure) {
-                    return _buildFailureState(context, state.message);
-                  } else if (state is CollectorTransactionsLoaded) {
-                    return _buildLoadedState(context, state);
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
+              BlocBuilder<CollectorTransactionsBloc, CollectorTransactionsState>(
+            builder: (context, state) {
+              if (state is CollectorTransactionsLoading ||
+                  state is CollectorTransactionsInitial) {
+                return _buildLoadingState();
+              } else if (state is CollectorTransactionsFailure) {
+                return _buildFailureState(context, state.message);
+              } else if (state is CollectorTransactionsLoaded) {
+                return _buildLoadedState(context, state);
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       ),
     );
   }
 
   Widget _buildLoadingState() {
-    return const Center(
+    final l10n = context.l10n;
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Color(0xFF147A65), strokeWidth: 3),
-          SizedBox(height: 16),
+          const CircularProgressIndicator(
+              color: Color(0xFF147A65), strokeWidth: 3),
+          const SizedBox(height: 16),
           Text(
-            'लेन-देन लोड हो रहे हैं...',
-            style: TextStyle(
+            l10n.loading,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: Color(0xFF374151),
@@ -114,6 +160,7 @@ class _CollectorTransactionsScreenState
   }
 
   Widget _buildFailureState(BuildContext context, String message) {
+    final l10n = context.l10n;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -133,9 +180,9 @@ class _CollectorTransactionsScreenState
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'लोड करने में समस्या हुई',
-              style: TextStyle(
+            Text(
+              l10n.lotsLoadError,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1F2937),
@@ -153,7 +200,7 @@ class _CollectorTransactionsScreenState
                 _bloc.add(const FetchCollectorTransactionsEvent(refresh: true));
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('पुनः प्रयास करें'),
+              label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF147A65),
                 foregroundColor: Colors.white,
@@ -196,12 +243,14 @@ class _CollectorTransactionsScreenState
   }
 
   Widget _buildEarningsSummary(CollectorTransactionsLoaded state) {
+    final l10n = context.l10n;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'कमाई का सारांश',
-          style: TextStyle(
+        Text(
+          l10n.earningsSummary,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Color(0xFF1F2937),
@@ -246,9 +295,9 @@ class _CollectorTransactionsScreenState
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'कुल कमाई',
-                      style: TextStyle(
+                    Text(
+                      l10n.totalEarnings,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF2E7D32),
@@ -256,7 +305,9 @@ class _CollectorTransactionsScreenState
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${state.completedCount} सफल लेन-देन',
+                      context.isMarathi
+                          ? '${state.completedCount} यशस्वी व्यवहार'
+                          : '${state.completedCount} सफल लेन-देन',
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF388E3C),
@@ -303,18 +354,21 @@ class _CollectorTransactionsScreenState
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'भुगतान बाकी',
-                      style: TextStyle(
+                    Text(
+                      l10n.paymentPending,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFFEF6C00),
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
-                      'रीसाइक्लर से प्रतीक्षित',
-                      style: TextStyle(fontSize: 11, color: Color(0xFFF57C00)),
+                    Text(
+                      context.isMarathi
+                          ? 'रीसायकलरकडून प्रतीक्षेत'
+                          : 'रीसाइक्लर से प्रतीक्षित',
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFFF57C00)),
                     ),
                   ],
                 ),
@@ -327,6 +381,7 @@ class _CollectorTransactionsScreenState
   }
 
   Widget _buildFilterChips(CollectorTransactionsLoaded state) {
+    final l10n = context.l10n;
     final current = state.statusFilter ?? 'all';
 
     return SingleChildScrollView(
@@ -334,14 +389,14 @@ class _CollectorTransactionsScreenState
       child: Row(
         children: [
           _filterChip(
-            label: 'सभी',
+            label: l10n.allTransactions,
             isSelected: current == 'all',
             onTap: () =>
                 _bloc.add(const FilterCollectorTransactionsEvent('all')),
           ),
           const SizedBox(width: 8),
           _filterChip(
-            label: 'भुगतान पूरा',
+            label: l10n.paymentCompleted,
             isSelected: current == 'completed',
             activeColor: const Color(0xFF1B5E20),
             activeBg: const Color(0xFFE8F5E9),
@@ -350,7 +405,7 @@ class _CollectorTransactionsScreenState
           ),
           const SizedBox(width: 8),
           _filterChip(
-            label: 'भुगतान बाकी',
+            label: l10n.paymentPending,
             isSelected: current == 'pending',
             activeColor: const Color(0xFFE65100),
             activeBg: const Color(0xFFFFF3E0),
@@ -395,6 +450,7 @@ class _CollectorTransactionsScreenState
   }
 
   Widget _buildEmptyState() {
+    final l10n = context.l10n;
     return Container(
       padding: const EdgeInsets.all(32),
       margin: const EdgeInsets.only(top: 20),
@@ -411,19 +467,21 @@ class _CollectorTransactionsScreenState
             color: Colors.grey.shade400,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'कोई लेन-देन नहीं मिला',
-            style: TextStyle(
+          Text(
+            l10n.noTransactionsFound,
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
               color: Color(0xFF1F2937),
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'जब आपका पूरा हुआ लॉट रीसाइक्लर द्वारा प्रोसेस किया जाएगा, उसका लेन-देन यहाँ दिखेगा।',
+          Text(
+            context.isMarathi
+                ? 'तुमचा पूर्ण झालेला लॉट रीसायकलरद्वारे प्रक्रिया केल्यावर, त्याचा व्यवहार येथे दिसेल.'
+                : 'जब आपका पूरा हुआ लॉट रीसाइक्लर द्वारा प्रोसेस किया जाएगा, उसका लेन-देन यहाँ दिखेगा।',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               color: Color(0xFF6B7280),
               height: 1.4,
@@ -435,12 +493,13 @@ class _CollectorTransactionsScreenState
   }
 
   Widget _buildTransactionCard(BuildContext context, TransactionEntity txn) {
+    final l10n = context.l10n;
     final net = txn.commission.netAmount > 0
         ? txn.commission.netAmount
         : (txn.amount -
-              (txn.commission.platformFee > 0
-                  ? txn.commission.platformFee
-                  : txn.amount * 0.05));
+            (txn.commission.platformFee > 0
+                ? txn.commission.platformFee
+                : txn.amount * 0.05));
     final displayNet = net > 0 ? net : txn.amount;
 
     Color badgeBg;
@@ -453,19 +512,19 @@ class _CollectorTransactionsScreenState
         badgeBg = const Color(0xFFE8F5E9);
         badgeFg = const Color(0xFF1B5E20);
         badgeIcon = Icons.check_circle;
-        badgeText = 'भुगतान पूरा';
+        badgeText = l10n.paymentCompleted;
         break;
       case PaymentStatus.failed:
         badgeBg = const Color(0xFFFFEBEE);
         badgeFg = const Color(0xFFC62828);
         badgeIcon = Icons.cancel;
-        badgeText = 'भुगतान विफल';
+        badgeText = l10n.paymentFailed;
         break;
       case PaymentStatus.pending:
         badgeBg = const Color(0xFFFFF3E0);
         badgeFg = const Color(0xFFE65100);
         badgeIcon = Icons.schedule;
-        badgeText = 'भुगतान बाकी';
+        badgeText = l10n.paymentPending;
         break;
     }
 
@@ -534,7 +593,9 @@ class _CollectorTransactionsScreenState
                         Text(
                           txn.notes != null && txn.notes!.isNotEmpty
                               ? txn.notes!
-                              : 'कबाड़ लॉट',
+                              : (context.isMarathi
+                                  ? 'कबाडी लॉट'
+                                  : 'कबाड़ लॉट'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -566,9 +627,9 @@ class _CollectorTransactionsScreenState
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
-                        'शुद्ध राशि',
-                        style: TextStyle(
+                      Text(
+                        l10n.netPayable,
+                        style: const TextStyle(
                           fontSize: 10,
                           color: Color(0xFF6B7280),
                         ),
@@ -609,7 +670,7 @@ class _CollectorTransactionsScreenState
                   Row(
                     children: [
                       Text(
-                        'विवरण देखें',
+                        l10n.viewDetails,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,

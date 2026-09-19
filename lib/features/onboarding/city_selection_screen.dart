@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../domain/entities/user_entity.dart';
-import '../authentication/presentation/bloc/auth_bloc.dart';
-import '../authentication/presentation/bloc/auth_state.dart';
 
 class CitySelectionScreen extends StatelessWidget {
   final String role;
@@ -38,27 +33,10 @@ class CitySelectionScreen extends StatelessWidget {
   }
 
   void _selectCity(BuildContext context, String city) {
-    final authState = context.read<AuthBloc>().state;
-
-    if (authState is! Authenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('कृपया आगे बढ़ने के लिए पहले लॉग इन करें'),
-        ),
-      );
-      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-      return;
-    }
-
-    final backendRole = authState.user.role;
-    final targetRoute = backendRole == UserRole.recycler
-        ? '/recycler-dashboard'
-        : '/collector-dashboard';
-
     Navigator.pushNamed(
       context,
-      targetRoute,
-      arguments: {'role': backendRole.value, 'state': state, 'city': city},
+      '/register',
+      arguments: {'role': role, 'state': state, 'city': city},
     );
   }
 

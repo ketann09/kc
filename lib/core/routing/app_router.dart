@@ -5,6 +5,7 @@ import 'package:kabadiwala_connect/features/collector/transaction_created_screen
 import '../../features/collector/nearby_recyclers_screen.dart';
 import '../../features/onboarding/city_selection_screen.dart';
 import '../../features/onboarding/otp_screen.dart';
+import '../../features/onboarding/register_screen.dart';
 import '../../features/onboarding/role_selection_screen.dart';
 import '../../features/onboarding/state_selection_screen.dart';
 import '../../features/collector/collector_dashboard_screen.dart';
@@ -16,6 +17,7 @@ import '../../domain/entities/lot_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../features/authentication/presentation/auth_gate.dart';
 import '../../features/collector/presentation/screens/collector_lot_details_screen.dart';
+import '../../features/collector/presentation/screens/collector_lots_screen.dart';
 import '../../features/collector/presentation/screens/collector_transactions_screen.dart';
 import '../../features/transactions/presentation/screens/transaction_details_screen.dart';
 
@@ -54,6 +56,18 @@ class AppRouter {
           ),
         );
 
+      case '/register':
+        final arguments = settings.arguments as Map<String, dynamic>? ?? {};
+
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => RegisterScreen(
+            role: arguments['role'] as String? ?? 'collector',
+            state: arguments['state'] as String? ?? 'उत्तर प्रदेश',
+            city: arguments['city'] as String? ?? 'गाज़ियाबाद',
+          ),
+        );
+
       case '/collector-dashboard':
         return MaterialPageRoute(
           builder: (_) => const CollectorDashboardScreen(),
@@ -63,6 +77,12 @@ class AppRouter {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const CollectorTransactionsScreen(),
+        );
+
+      case '/collector-lots':
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const CollectorLotsScreen(),
         );
 
       case '/collector-lot-details':

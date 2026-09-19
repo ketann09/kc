@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/widgets/language_audio_sheet.dart';
+import '../../../core/widgets/speaker_button.dart';
 import '../../../domain/entities/lot_entity.dart';
 import '../authentication/presentation/bloc/auth_bloc.dart';
 import '../authentication/presentation/bloc/auth_state.dart';
@@ -101,11 +104,57 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text(
-          'लॉट विवरण',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Text(
+          context.l10n.lotDetails,
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
+        actions: [
+          InkWell(
+            onTap: () => LanguageAudioSheet.show(context),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.language, size: 15, color: Color(0xFF2E7D32)),
+                  const SizedBox(width: 4),
+                  Text(
+                    context.currentLanguage.nativeLabel,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          BlocBuilder<RecyclerLotDetailsBloc, RecyclerLotDetailsState>(
+            builder: (context, state) {
+              if (state is RecyclerLotDetailsLoaded) {
+                final l10n = context.l10n;
+                final lot = state.lot;
+                return SpeakerButton(
+                  textToSpeak:
+                      '${l10n.lotDetails}. ${lot.materialName ?? lot.description ?? ""}. ${l10n.weight}: ${lot.actualWeight ?? lot.estimatedWeight} kg. ${l10n.settlementAmount}: ₹${(lot.finalPrice ?? lot.estimatedPrice).toStringAsFixed(0)}.',
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: BlocConsumer<RecyclerLotDetailsBloc, RecyclerLotDetailsState>(
@@ -259,42 +308,43 @@ class _RecyclerLotDetailsViewState extends State<_RecyclerLotDetailsView> {
 
     final priceLabel = isCompleted ? 'अंतिम मूल्य' : 'अनुमानित मूल्य';
     final weightLabel = (isCompleted || lot.actualWeight != null)
-        ? 'वास्तविक वजन'
-        : 'कुल वजन';
+        ? (context.isMarathi ? 'प्रत्यक्ष वजन' : 'वास्तविक वजन')
+        : (context.isMarathi ? 'एकूण वजन' : 'कुल वजन');
 
     final isPickup = lot.schedulePickup != null;
 
+    final l10n = context.l10n;
     String statusHindi;
     Color statusColor;
     Color statusBgColor;
     switch (lot.status) {
       case LotStatus.pending:
-        statusHindi = 'लंबित';
+        statusHindi = l10n.statusPending;
         statusColor = const Color(0xFFF57C00);
         statusBgColor = const Color(0xFFFFF3E0);
         break;
       case LotStatus.accepted:
-        statusHindi = 'स्वीकृत';
+        statusHindi = l10n.statusAccepted;
         statusColor = const Color(0xFF1B5E20);
         statusBgColor = const Color(0xFFE8F5E9);
         break;
       case LotStatus.picked:
-        statusHindi = 'पिकअप के लिए तैयार';
+        statusHindi = l10n.statusPicked;
         statusColor = const Color(0xFF0288D1);
         statusBgColor = const Color(0xFFE1F5FE);
         break;
       case LotStatus.delivered:
-        statusHindi = 'डिलीवर किया गया';
+        statusHindi = l10n.statusDelivered;
         statusColor = const Color(0xFF7B1FA2);
         statusBgColor = const Color(0xFFF3E5F5);
         break;
       case LotStatus.completed:
-        statusHindi = 'पूरा हुआ';
+        statusHindi = l10n.statusCompletedDetailed;
         statusColor = const Color(0xFF2E7D32);
         statusBgColor = const Color(0xFFE8F5E9);
         break;
       case LotStatus.cancelled:
-        statusHindi = 'रद्द';
+        statusHindi = l10n.statusCancelled;
         statusColor = const Color(0xFFC62828);
         statusBgColor = const Color(0xFFFFEBEE);
         break;

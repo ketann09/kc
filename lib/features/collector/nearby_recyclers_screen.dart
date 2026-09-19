@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/localization/app_localizations.dart';
 import '../../core/network/api_client.dart';
+import '../../core/widgets/language_audio_sheet.dart';
+import '../../core/widgets/speaker_button.dart';
 import '../../domain/entities/matched_recycler_entity.dart';
 import 'collector_dependency_container.dart';
 import 'presentation/bloc/matchmaking/matchmaking_bloc.dart';
@@ -76,11 +79,52 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final hasValidLotId = widget.lotId != null && widget.lotId!.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-      appBar: AppBar(title: const Text('पास के रीसाइक्लर'), centerTitle: true),
+      appBar: AppBar(
+        title: Text(l10n.nearbyRecyclers),
+        centerTitle: true,
+        actions: [
+          InkWell(
+            onTap: () => LanguageAudioSheet.show(context),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.language,
+                      size: 15, color: Color(0xFF2E7D32)),
+                  const SizedBox(width: 4),
+                  Text(
+                    context.currentLanguage.nativeLabel,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SpeakerButton(
+            textToSpeak: '${l10n.nearbyRecyclers}. ${l10n.selectRecycler}.',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
         child: !hasValidLotId
             ? _buildMissingLotIdState(context)
@@ -88,7 +132,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                 builder: (context, state) {
                   if (state is MatchmakingLoading ||
                       state is MatchmakingInitial) {
-                    return _buildLoadingState();
+                    return _buildLoadingState(context);
                   } else if (state is MatchmakingFailure) {
                     return _buildFailureState(context, state.message);
                   } else if (state is MatchmakingEmpty) {
@@ -104,6 +148,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
   }
 
   Widget _buildMissingLotIdState(BuildContext context) {
+    final l10n = context.l10n;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -123,19 +168,27 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'लॉट आईडी नहीं मिली',
-              style: TextStyle(
+            Text(
+              context.isMarathi
+                  ? 'लॉट आयडी आढळला नाही'
+                  : (context.isEnglish
+                      ? 'Lot ID Not Found'
+                      : 'लॉट आईडी नहीं मिली'),
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF191919),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'रीसाइक्लर खोजने के लिए लॉट आईडी आवश्यक है। कृपया पहले लॉट बनाएं।',
+            Text(
+              context.isMarathi
+                  ? 'रीसायकलर शोधण्यासाठी लॉट आयडी आवश्यक आहे. कृपया आधी लॉट तयार करा.'
+                  : (context.isEnglish
+                      ? 'Lot ID is required to search recyclers. Please create a lot first.'
+                      : 'रीसाइक्लर खोजने के लिए लॉट आईडी आवश्यक है। कृपया पहले लॉट बनाएं।'),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -151,7 +204,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('वापस जाएं'),
+              child: Text(l10n.goBackAction),
             ),
           ],
         ),
@@ -159,26 +212,30 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return const Center(
+  Widget _buildLoadingState(BuildContext context) {
+    final l10n = context.l10n;
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Color(0xFF176B45), strokeWidth: 3),
-          SizedBox(height: 20),
+          const CircularProgressIndicator(
+              color: Color(0xFF176B45), strokeWidth: 3),
+          const SizedBox(height: 20),
           Text(
-            'रीसाइक्लर खोजे जा रहे हैं...',
-            style: TextStyle(
+            l10n.searchingRecyclers,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: Color(0xFF191919),
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'आपके लॉट के लिए निकटतम और सबसे अच्छे रीसाइक्लर ढूंढे जा रहे हैं',
+            context.isMarathi
+                ? 'तुमच्या लॉटसाठी जवळचे रीसायकलर्स शोधले जात आहेत'
+                : 'आपके लॉट के लिए निकटतम और सबसे अच्छे रीसाइक्लर ढूंढे जा रहे हैं',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
           ),
         ],
       ),
@@ -186,6 +243,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
   }
 
   Widget _buildFailureState(BuildContext context, String message) {
+    final l10n = context.l10n;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -205,9 +263,9 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'रीसाइक्लर लोड करने में समस्या',
-              style: TextStyle(
+            Text(
+              l10n.recyclersLoadError,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF191919),
@@ -229,7 +287,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                 }
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('पुनः प्रयास करें'),
+              label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF176B45),
                 foregroundColor: Colors.white,
@@ -249,6 +307,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final l10n = context.l10n;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -268,19 +327,21 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'कोई रीसाइक्लर नहीं मिला',
-              style: TextStyle(
+            Text(
+              l10n.noRecyclersFound,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF191919),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'आपके क्षेत्र में फिलहाल कोई सक्रिय रीसाइक्लर उपलब्ध नहीं है। कृपया कुछ समय बाद पुनः प्रयास करें।',
+            Text(
+              context.isMarathi
+                  ? 'तुमच्या परिसरात सध्या कोणताही रीसायकलर उपलब्ध नाही. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा.'
+                  : 'आपके क्षेत्र में फिलहाल कोई सक्रिय रीसाइक्लर उपलब्ध नहीं है। कृपया कुछ समय बाद पुनः प्रयास करें।',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -292,7 +353,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                 }
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('पुनः प्रयास करें'),
+              label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF176B45),
                 foregroundColor: Colors.white,
@@ -312,6 +373,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
   }
 
   Widget _buildLoadedState(BuildContext context, MatchmakingLoaded state) {
+    final l10n = context.l10n;
     final matches = state.matches;
     final selected = state.selectedRecycler;
 
@@ -325,9 +387,9 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
             children: [
-              const Text(
-                'पास के रीसाइक्लर',
-                style: TextStyle(
+              Text(
+                l10n.nearbyRecyclers,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF191919),
@@ -335,7 +397,9 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               ),
               const SizedBox(height: 6),
               Text(
-                '${matches.length} रीसाइक्लर आपके कबाड़ के लिए उपलब्ध हैं',
+                context.isMarathi
+                    ? '${matches.length} रीसायकलर्स तुमच्या स्क्रॅपसाठी उपलब्ध आहेत'
+                    : '${matches.length} रीसाइक्लर आपके कबाड़ के लिए उपलब्ध हैं',
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
               ),
               const SizedBox(height: 20),
@@ -364,11 +428,12 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
     required bool isSelected,
     required bool isBestMatch,
   }) {
+    final l10n = context.l10n;
     final name =
         (recycler.recyclerName != null &&
             recycler.recyclerName!.trim().isNotEmpty)
         ? recycler.recyclerName!.trim()
-        : 'अधिकृत रीसाइक्लर';
+        : (context.isMarathi ? 'अधिकृत रीसायकलर' : 'अधिकृत रीसाइक्लर');
 
     final effectiveOffer = recycler.estimatedTotal > 0
         ? recycler.estimatedTotal
@@ -462,8 +527,8 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                           const SizedBox(width: 4),
                           Text(
                             recycler.distance > 0
-                                ? '${recycler.distance.toStringAsFixed(1)} किमी दूर'
-                                : 'पास में स्थित',
+                                ? '${recycler.distance.toStringAsFixed(1)} ${context.isMarathi ? 'किमी लांब' : 'किमी दूर'}'
+                                : (context.isMarathi ? 'जवळ स्थित' : 'पास में स्थित'),
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade700,
@@ -488,9 +553,9 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: const Color(0xFFB9DCC9)),
                         ),
-                        child: const Text(
-                          'सर्वश्रेष्ठ मैच',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.bestMatch,
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF176B45),
@@ -508,7 +573,9 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'मैच: ${(recycler.score * 100).toStringAsFixed(0)}%',
+                          l10n.matchPercentageLabel(
+                            (recycler.score * 100).round(),
+                          ),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -533,9 +600,9 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'प्रस्तावित दर',
-                        style: TextStyle(
+                      Text(
+                        l10n.proposedRate,
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFF6B7280),
                         ),
@@ -544,7 +611,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                       Text(
                         recycler.price > 0
                             ? '₹${recycler.price.toStringAsFixed(0)}'
-                            : 'पूछताछ करें',
+                            : '-',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -556,9 +623,9 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        'अनुमानित ऑफर',
-                        style: TextStyle(
+                      Text(
+                        l10n.estimatedOffer,
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFF6B7280),
                         ),
@@ -588,9 +655,9 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                         size: 18,
                         color: Color(0xFF176B45),
                       ),
-                      label: const Text(
-                        'चयनित',
-                        style: TextStyle(
+                      label: Text(
+                        l10n.selected,
+                        style: const TextStyle(
                           color: Color(0xFF176B45),
                           fontWeight: FontWeight.w700,
                         ),
@@ -618,7 +685,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: const Text('रीसाइक्लर चुनें'),
+                      child: Text(l10n.selectRecycler),
                     ),
             ),
           ],
@@ -627,7 +694,109 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
     );
   }
 
+  void _showConfirmationDialog(
+    BuildContext context,
+    MatchedRecyclerEntity selected,
+    String lotId,
+  ) {
+    final l10n = context.l10n;
+    final effectiveOffer = selected.estimatedTotal > 0
+        ? selected.estimatedTotal
+        : selected.price;
+    final recyclerName =
+        (selected.recyclerName != null &&
+            selected.recyclerName!.trim().isNotEmpty)
+        ? selected.recyclerName!.trim()
+        : (context.isMarathi ? 'अधिकृत रीसायकलर' : 'अधिकृत रीसाइक्लर');
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          l10n.confirmRecycler,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.isMarathi
+                  ? 'तुम्ही $recyclerName कडे हा लॉट सोपवण्याची विनंती पाठवू इच्छिता का?'
+                  : 'क्या आप $recyclerName को यह लॉट सौंपने का अनुरोध भेजना चाहते हैं?',
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF5EF),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${l10n.proposedRate}:',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    '₹${effectiveOffer.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF176B45),
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              l10n.cancel,
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    context.isMarathi
+                        ? 'रीसायकलरकडे विनंती पाठवली आहे!'
+                        : 'रीसाइक्लर को अनुरोध भेज दिया गया है!',
+                  ),
+                  backgroundColor: const Color(0xFF176B45),
+                ),
+              );
+              Navigator.pushReplacementNamed(
+                context,
+                '/collector-lot-details',
+                arguments: {'lotId': lotId},
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF176B45),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomActionBar(BuildContext context, MatchmakingLoaded state) {
+    final l10n = context.l10n;
     final selected = state.selectedRecycler;
 
     return Container(
@@ -651,21 +820,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
             onPressed: selected == null
                 ? null
                 : () {
-                    final effectiveOffer = selected.estimatedTotal > 0
-                        ? selected.estimatedTotal
-                        : selected.price;
-                    Navigator.pushNamed(
-                      context,
-                      '/accept-offer',
-                      arguments: {
-                        'recyclerName':
-                            selected.recyclerName ?? 'अधिकृत रीसाइक्लर',
-                        'offerPrice': effectiveOffer,
-                        'pickup': true,
-                        'lotId': state.lotId,
-                        'recyclerId': selected.recyclerId,
-                      },
-                    );
+                    _showConfirmationDialog(context, selected, state.lotId);
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF176B45),
@@ -677,8 +832,11 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
             ),
             child: Text(
               selected != null
-                  ? 'ऑफर की पुष्टि करें (${selected.recyclerName ?? 'रीसाइक्लर'})'
-                  : 'कोई रीसाइक्लर चुनें',
+                  ? l10n.confirmOfferWithRecycler(
+                      selected.recyclerName ??
+                          (context.isMarathi ? 'रीसायकलर' : 'रीसाइक्लर'),
+                    )
+                  : l10n.selectRecycler,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
           ),
