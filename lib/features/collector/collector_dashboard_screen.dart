@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import '../../core/storage/read_cache_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/app_navigation_drawer.dart';
 import '../../core/widgets/app_stat_card.dart';
 import '../../core/widgets/language_audio_sheet.dart';
 import '../../core/widgets/offline_stale_banner.dart';
@@ -272,6 +273,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppNavigationDrawer(currentRoute: '/collector-dashboard'),
       backgroundColor: AppColors.pageBackground,
       body: SafeArea(
         child: BlocBuilder<CollectorLotsBloc, CollectorLotsState>(
@@ -354,23 +356,30 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
 
     return Row(
       children: [
-        if (Navigator.canPop(context))
-          _BackButton(onPressed: () => Navigator.pop(context))
-        else
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.saffron50,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.saffron200, width: 1.5),
-            ),
-            child: const Icon(
-              Icons.person_rounded,
-              color: AppColors.saffronPrimary,
-              size: 24,
+        Builder(
+          builder: (bCtx) => InkWell(
+            key: const Key('dashboard_menu_button'),
+            onTap: () => Scaffold.of(bCtx).openDrawer(),
+            borderRadius: BorderRadius.circular(22),
+            child: Tooltip(
+              message: l10n.navigationMenu,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.saffron50,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.saffron200, width: 1.5),
+                ),
+                child: const Icon(
+                  Icons.menu_rounded,
+                  color: AppColors.saffronPrimary,
+                  size: 24,
+                ),
+              ),
             ),
           ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -1125,29 +1134,6 @@ class _RateCard extends StatelessWidget {
             style: TextStyle(fontSize: 11, color: AppColors.dark400),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _BackButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _BackButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.dark900, width: 1.5),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.arrow_back_rounded, size: 22),
       ),
     );
   }

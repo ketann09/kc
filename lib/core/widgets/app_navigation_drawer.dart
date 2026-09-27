@@ -11,12 +11,14 @@ import 'change_password_sheet.dart';
 import 'language_audio_sheet.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
-  const AppNavigationDrawer({super.key});
+  final String? currentRoute;
+
+  const AppNavigationDrawer({super.key, this.currentRoute});
 
   void _navigate(BuildContext context, String routeName) {
     Navigator.pop(context);
-    final currentRoute = ModalRoute.of(context)?.settings.name;
-    if (currentRoute != routeName) {
+    final activeRoute = currentRoute ?? ModalRoute.of(context)?.settings.name;
+    if (activeRoute != routeName) {
       Navigator.pushNamed(context, routeName);
     }
   }
