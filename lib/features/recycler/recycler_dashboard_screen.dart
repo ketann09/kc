@@ -4,6 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/read_cache_storage.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/language_audio_sheet.dart';
 import '../../../core/widgets/offline_stale_banner.dart';
 import '../../../core/widgets/speaker_button.dart';
@@ -97,11 +100,17 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
     final l10n = context.l10n;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
+        backgroundColor: AppColors.pageBackground,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           l10n.newLotRequests,
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            color: AppColors.dark900,
+          ),
         ),
         centerTitle: false,
         actions: [
@@ -112,10 +121,10 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: AppColors.saffron100,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                  color: AppColors.saffronPrimary.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -124,7 +133,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
                   const Icon(
                     Icons.language,
                     size: 15,
-                    color: Color(0xFF2E7D32),
+                    color: AppColors.saffronDark,
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -132,7 +141,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
+                      color: AppColors.saffronDark,
                     ),
                   ),
                 ],
@@ -183,7 +192,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const CircularProgressIndicator(
-            color: Color(0xFF147A65),
+            color: AppColors.saffronPrimary,
             strokeWidth: 3,
           ),
           const SizedBox(height: 20),
@@ -192,7 +201,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF191919),
+              color: AppColors.dark900,
             ),
           ),
         ],
@@ -211,12 +220,12 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                color: Color(0xFFFEE2E2),
+                color: AppColors.red100,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.error_outline_rounded,
-                color: Color(0xFFDC2626),
+                color: AppColors.redPrimary,
                 size: 48,
               ),
             ),
@@ -226,14 +235,14 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF191919),
+                color: AppColors.dark900,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: AppColors.dark500),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -245,8 +254,9 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
               icon: const Icon(Icons.refresh),
               label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147A65),
+                backgroundColor: AppColors.saffronPrimary,
                 foregroundColor: Colors.white,
+                minimumSize: const Size(0, 48),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -264,71 +274,28 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
 
   Widget _buildEmptyState(BuildContext context) {
     final l10n = context.l10n;
-    return Center(
-      child: RefreshIndicator(
-        color: const Color(0xFF147A65),
-        onRefresh: () async {
-          context.read<RecyclerDashboardBloc>().add(
-            const FetchIncomingLots(page: 1, refresh: true),
-          );
-        },
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(32),
-          children: [
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEAF5EF),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.inventory_2_outlined,
-                  size: 48,
-                  color: Color(0xFF147A65),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              l10n.noLotsAvailable,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF191919),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              context.isMarathi
-                  ? 'नवीन लॉटच्या विनंत्या येथे दिसतील.'
-                  : 'नए लॉट अनुरोध यहाँ दिखाई देंगे।',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
-            ),
-            const SizedBox(height: 24),
-            Center(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  context.read<RecyclerDashboardBloc>().add(
-                    const FetchIncomingLots(page: 1, refresh: true),
-                  );
-                },
-                icon: const Icon(Icons.refresh, size: 18),
-                label: Text(l10n.refreshAction),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF147A65),
-                  side: const BorderSide(color: Color(0xFF147A65)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+    return RefreshIndicator(
+      color: AppColors.saffronPrimary,
+      onRefresh: () async {
+        context.read<RecyclerDashboardBloc>().add(
+          const FetchIncomingLots(page: 1, refresh: true),
+        );
+      },
+      child: ListView(
+        padding: const EdgeInsets.all(32),
+        children: [
+          AppEmptyState(
+            title: l10n.noIncomingLots,
+            description: l10n.noIncomingLotsSubtitle,
+            icon: const Icon(Icons.inventory_2_outlined),
+            actionText: l10n.refreshAction,
+            onAction: () {
+              context.read<RecyclerDashboardBloc>().add(
+                const FetchIncomingLots(page: 1, refresh: true),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -338,7 +305,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
     final lots = state.lots;
 
     return RefreshIndicator(
-      color: const Color(0xFF147A65),
+      color: AppColors.saffronPrimary,
       onRefresh: () async {
         context.read<RecyclerDashboardBloc>().add(
           const FetchIncomingLots(page: 1, refresh: true),
@@ -366,7 +333,7 @@ class _RecyclerDashboardViewState extends State<_RecyclerDashboardView> {
                     l10n.incomingLotsSubtitle,
                     style: const TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF6B7280),
+                      color: AppColors.dark500,
                     ),
                   ),
                 ),
@@ -403,7 +370,6 @@ class _LotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final primaryColor = Theme.of(context).colorScheme.primary;
 
     final materialTitle =
         (lot.materialName != null && lot.materialName!.isNotEmpty)
@@ -445,144 +411,157 @@ class _LotCard extends StatelessWidget {
     final isPickup = lot.schedulePickup != null;
 
     String statusText;
+    Color statusColor;
+    Color statusBg;
     switch (lot.status) {
       case LotStatus.pending:
         statusText = l10n.statusPending;
+        statusColor = AppColors.amber700;
+        statusBg = AppColors.amber100;
         break;
       case LotStatus.accepted:
         statusText = l10n.statusAccepted;
+        statusColor = AppColors.green700;
+        statusBg = AppColors.green100;
         break;
       case LotStatus.picked:
         statusText = l10n.statusPicked;
+        statusColor = AppColors.saffronDark;
+        statusBg = AppColors.saffron100;
         break;
       case LotStatus.delivered:
         statusText = l10n.statusDelivered;
+        statusColor = AppColors.saffronDark;
+        statusBg = AppColors.saffron200;
         break;
       case LotStatus.completed:
         statusText = l10n.statusCompleted;
+        statusColor = AppColors.green700;
+        statusBg = AppColors.green100;
         break;
       case LotStatus.cancelled:
         statusText = l10n.statusCancelled;
+        statusColor = AppColors.redPrimary;
+        statusBg = AppColors.red100;
         break;
     }
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          materialTitle,
-                          style: const TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEAF5EF),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            statusText,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF147A65),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    priceText,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: primaryColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                '$weightText · $collectorInfo',
-                style: const TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-              if (locationText != null) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        locationText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
+    return AppCard(
+      onTap: onTap,
+      padding: EdgeInsets.zero,
+      borderRadius: 18,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        materialTitle,
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.dark900,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusBg,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  priceText,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.greenPrimary,
+                  ),
                 ),
               ],
-              const SizedBox(height: 14),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '$weightText · $collectorInfo',
+              style: const TextStyle(fontSize: 14, color: AppColors.dark500),
+            ),
+            if (locationText != null) ...[
+              const SizedBox(height: 6),
               Row(
                 children: [
-                  Icon(
-                    isPickup
-                        ? Icons.local_shipping_outlined
-                        : Icons.storefront_outlined,
-                    size: 18,
-                    color: primaryColor,
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 16,
+                    color: AppColors.dark400,
                   ),
-                  const SizedBox(width: 7),
-                  Text(
-                    isPickup
-                        ? (context.isMarathi ? 'पिकअप विनंती' : 'पिकअप अनुरोध')
-                        : (context.isMarathi ? 'ड्रॉप-ऑफ' : 'ड्रॉप-ऑफ'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: primaryColor,
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      locationText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.dark400,
+                      ),
                     ),
                   ),
-                  const Spacer(),
-                  const Icon(Icons.chevron_right, size: 22),
                 ],
               ),
             ],
-          ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Icon(
+                  isPickup
+                      ? Icons.local_shipping_outlined
+                      : Icons.storefront_outlined,
+                  size: 18,
+                  color: AppColors.saffronDark,
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  isPickup
+                      ? (context.isMarathi ? 'पिकअप विनंती' : 'पिकअप अनुरोध')
+                      : (context.isMarathi ? 'ड्रॉप-ऑफ' : 'ड्रॉप-ऑफ'),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.saffronDark,
+                  ),
+                ),
+                const Spacer(),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 22,
+                  color: AppColors.saffronDark,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

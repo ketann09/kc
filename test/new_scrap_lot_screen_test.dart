@@ -9,6 +9,7 @@ import 'package:kabadiwala_connect/domain/usecases/collector/create_collector_lo
 import 'package:kabadiwala_connect/domain/usecases/collector/estimate_price_usecase.dart';
 import 'package:kabadiwala_connect/features/collector/new_scrap_lot_screen.dart';
 import 'package:kabadiwala_connect/features/collector/presentation/bloc/new_lot/new_lot_bloc.dart';
+import 'package:kabadiwala_connect/features/collector/presentation/bloc/new_lot/new_lot_event.dart';
 import 'package:kabadiwala_connect/features/collector/presentation/bloc/new_lot/new_lot_state.dart';
 
 import 'collector_bloc_test.dart';
@@ -36,6 +37,10 @@ void main() {
     Widget createWidgetUnderTest({NewLotBloc? bloc}) {
       return MaterialApp(
         theme: AppTheme.lightTheme,
+        routes: {
+          '/recyclers': (context) =>
+              const Scaffold(body: Text('Nearby Recyclers Screen')),
+        },
         home: BlocProvider<NewLotBloc>.value(
           value: bloc ?? newLotBloc,
           child: const NewScrapLotScreen(),
@@ -71,7 +76,7 @@ void main() {
 
       // Weight section
       expect(find.text('वज़न'), findsOneWidget);
-      expect(find.text('KG'), findsOneWidget);
+      expect(find.text('KG'), findsWidgets);
       expect(find.text('+ 1 KG'), findsOneWidget);
       expect(find.text('+ 5 KG'), findsOneWidget);
 
@@ -92,6 +97,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(newLotBloc.state.category, equals('E-Waste'));
+      expect(newLotBloc.state.priceEstimate?.recommendedRateInr, equals(210.0));
+      expect(newLotBloc.state.priceEstimate?.estimatedValueInr, equals(210.0));
     });
 
     testWidgets(
@@ -241,6 +248,368 @@ void main() {
         expect(navigatedLotId, equals('lot_real_123'));
 
         populatedBloc.close();
+      },
+    );
+
+    testWidgets(
+      'Exposes prominent Retry AI Scan button when classification fails and dispatches retry',
+      (tester) async {
+        final failingBloc = NewLotBloc(
+          classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+          estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+          createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+        );
+
+        failingBloc.emit(
+          const NewLotState(
+            status: NewLotStatus.failure,
+            errorType: NewLotErrorType.classification,
+            imagePath: 'test_path/photo.jpg',
+            errorMessage: 'Timeout error from ML service',
+          ),
+        );
+
+        await tester.pumpWidget(createWidgetUnderTest(bloc: failingBloc));
+        await tester.pumpAndSettle();
+
+        // Failure banner and Retry button should be displayed
+        expect(find.text('पहचान नहीं हो सकी'), findsOneWidget);
+        expect(find.byKey(const Key('retry_ai_scan_button')), findsOneWidget);
+        expect(find.text('पुनः AI स्कैन करें'), findsOneWidget);
+
+        // Tapping retry button dispatches NewLotImageSelected
+        final retryFinder = find.byKey(const Key('retry_ai_scan_button'));
+        await tester.ensureVisible(retryFinder);
+        await tester.pumpAndSettle();
+        await tester.tap(retryFinder);
+        await tester.pump();
+
+        // Should transition to classifying or classified
+        expect(
+          failingBloc.state.status == NewLotStatus.classifying ||
+              failingBloc.state.status == NewLotStatus.classified,
+          isTrue,
+        );
+
+        failingBloc.close();
+      },
+    );
+
+    testWidgets('Renders all 10 supported material/category chips', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      final expectedCategories = [
+        'प्लास्टिक',
+        'ई-वेस्ट',
+        'सीआरटी / टीवी मॉनिटर',
+        'एलसीडी / एलईडी स्क्रीन',
+        'केबल',
+        'बैटरी',
+        'मोटर व पुर्जे',
+        'धातु / लोहा',
+        'कागज़',
+        'अन्य',
+      ];
+
+      for (final label in expectedCategories) {
+        expect(find.text(label), findsOneWidget);
+      }
+    });
+
+    testWidgets(
+      'Unit switching: selecting CRT switches input unit to Piece and quick buttons to Piece increments',
+      (tester) async {
+        final crtBloc = NewLotBloc(
+          classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+          estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+          createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+        );
+        crtBloc.emit(const NewLotState(category: 'CRT'));
+
+        await tester.pumpWidget(createWidgetUnderTest(bloc: crtBloc));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Piece'), findsWidgets);
+        expect(find.text('+ 1 Piece'), findsOneWidget);
+        expect(find.text('+ 5 Pieces'), findsOneWidget);
+        crtBloc.close();
+
+        final plasticBloc = NewLotBloc(
+          classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+          estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+          createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+        );
+        plasticBloc.emit(const NewLotState(category: 'Plastic'));
+
+        await tester.pumpWidget(createWidgetUnderTest(bloc: plasticBloc));
+        await tester.pumpAndSettle();
+
+        expect(find.text('KG'), findsWidgets);
+        expect(find.text('+ 1 KG'), findsOneWidget);
+        expect(find.text('+ 5 KG'), findsOneWidget);
+        plasticBloc.close();
+      },
+    );
+
+    testWidgets('Tapping an already active category chip deselects it', (
+      tester,
+    ) async {
+      final bloc = NewLotBloc(
+        classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+        estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+        createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+      );
+      bloc.emit(const NewLotState(category: 'Plastic'));
+
+      await tester.pumpWidget(createWidgetUnderTest(bloc: bloc));
+      await tester.pumpAndSettle();
+      expect(bloc.state.category, equals('Plastic'));
+
+      // Tap plastic chip to deselect
+      final plasticFinder = find.text('प्लास्टिक');
+      await tester.tap(plasticFinder);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.category, isNull);
+      bloc.close();
+    });
+
+    testWidgets(
+      'AI classification overrides stale manual category selection in UI',
+      (tester) async {
+        final bloc = NewLotBloc(
+          classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+          estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+          createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+        );
+        bloc.emit(const NewLotState(category: 'Paper'));
+
+        await tester.pumpWidget(createWidgetUnderTest(bloc: bloc));
+        await tester.pumpAndSettle();
+        expect(bloc.state.category, equals('Paper'));
+
+        // Emit new state with AI classification overriding manual category
+        bloc.emit(
+          const NewLotState(
+            status: NewLotStatus.classified,
+            imagePath: 'test_path/plastic_bottle.jpg',
+            category: 'Plastic',
+            classification: MLClassificationEntity(
+              category: 'Plastic',
+              confidence: 0.94,
+              confidencePercent: 94.0,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(bloc.state.category, equals('Plastic'));
+        expect(find.text('AI से पहचान'), findsOneWidget);
+        bloc.close();
+      },
+    );
+
+    testWidgets(
+      'Manual category selection displays Selected Category and hides AI identified badge',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final bloc = NewLotBloc(
+          classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+          estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+          createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+        );
+        bloc.emit(
+          const NewLotState(
+            status: NewLotStatus.classified,
+            imagePath: 'test_path/photo.jpg',
+            category: 'Plastic',
+            classification: MLClassificationEntity(
+              category: 'Plastic',
+              confidence: 0.94,
+              confidencePercent: 94.0,
+            ),
+            isManualCategory: false,
+          ),
+        );
+
+        await tester.pumpWidget(createWidgetUnderTest(bloc: bloc));
+        await tester.pumpAndSettle();
+        expect(find.text('AI से पहचान'), findsOneWidget);
+
+        // Tap Metal category to manually select
+        final metalFinder = find.text('धातु / लोहा');
+        await tester.ensureVisible(metalFinder);
+        await tester.tap(metalFinder);
+        await tester.pumpAndSettle();
+
+        expect(bloc.state.isManualCategory, isTrue);
+        expect(bloc.state.category, equals('Metal'));
+        expect(find.text('चयनित श्रेणी'), findsOneWidget);
+        expect(find.text('AI से पहचान'), findsNothing);
+        bloc.close();
+      },
+    );
+
+    testWidgets('CRT Piece valuation recalculates when quantity changes', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final bloc = NewLotBloc(
+        classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+        estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+        createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+      );
+      bloc.emit(
+        const NewLotState(
+          status: NewLotStatus.priced,
+          imagePath: 'test_path/crt.jpg',
+          category: 'CRT',
+          quantity: 1,
+          weightKg: 1.0,
+          priceEstimate: MLPriceEntity(
+            category: 'CRT',
+            recommendedRateInr: 150.0,
+            unit: 'Piece',
+            estimatedValueInr: 150.0,
+            estimatedValueMinInr: 140.0,
+            estimatedValueMaxInr: 160.0,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(createWidgetUnderTest(bloc: bloc));
+      await tester.pumpAndSettle();
+
+      expect(find.text('₹150'), findsOneWidget);
+      expect(find.text('₹150 / Piece'), findsOneWidget);
+
+      // Tap + 1 Piece button
+      final plusOneFinder = find.text('+ 1 Piece');
+      expect(plusOneFinder, findsOneWidget);
+      await tester.ensureVisible(plusOneFinder);
+      await tester.tap(plusOneFinder);
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.quantity, equals(2));
+      expect(find.text('₹300'), findsOneWidget);
+      bloc.close();
+    });
+
+    testWidgets('Manual category selection immediately updates rate and valuation in UI from initial state', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final bloc = NewLotBloc(
+        classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+        estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+        createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+      );
+
+      // Select Plastic manually
+      bloc.add(const NewLotCategoryChanged(category: 'Plastic', isManual: true));
+
+      await tester.pumpWidget(createWidgetUnderTest(bloc: bloc));
+      await tester.pumpAndSettle();
+
+      expect(find.text('₹25 / KG'), findsOneWidget);
+      expect(find.text('₹25'), findsOneWidget);
+      expect(bloc.state.category, equals('Plastic'));
+      expect(bloc.state.isManualCategory, isTrue);
+
+      // Switch to E-Waste
+      bloc.add(const NewLotCategoryChanged(category: 'E-Waste', isManual: true));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('₹210 / KG'), findsOneWidget);
+      expect(find.text('₹210'), findsOneWidget);
+      expect(bloc.state.category, equals('E-Waste'));
+
+      // Switch to CRT -> Piece unit and rate
+      bloc.add(const NewLotCategoryChanged(category: 'CRT', isManual: true));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('₹150 / Piece'), findsOneWidget);
+      expect(find.text('₹150'), findsOneWidget);
+      expect(bloc.state.category, equals('CRT'));
+
+      // Deselect category
+      bloc.add(const NewLotCategoryChanged(category: null, isManual: false));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.category, isNull);
+      expect(bloc.state.priceEstimate, isNull);
+      expect(find.text('वज़न भरें और कीमत देखें'), findsOneWidget);
+
+      bloc.close();
+    });
+
+    testWidgets(
+      'Recycler Khoje CTA is enabled for valid manual lot without image and dispatches NewLotSubmitted',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final bloc = NewLotBloc(
+          classifyScrapImageUseCase: ClassifyScrapImageUseCase(fakeML),
+          estimatePriceUseCase: EstimatePriceUseCase(fakeML),
+          createCollectorLotUseCase: CreateCollectorLotUseCase(fakeLots),
+        );
+
+        await tester.pumpWidget(createWidgetUnderTest(bloc: bloc));
+        await tester.pumpAndSettle();
+
+        // Initially without category, CTA should be disabled
+        final ctaFinder = find.widgetWithText(ElevatedButton, 'रीसाइक्लर खोजें');
+        expect(ctaFinder, findsOneWidget);
+        var ctaButton = tester.widget<ElevatedButton>(ctaFinder);
+        expect(ctaButton.onPressed, isNull);
+
+        // Tap Plastic chip to manually select category
+        await tester.tap(find.text('प्लास्टिक'));
+        await tester.pumpAndSettle();
+
+        expect(bloc.state.category, equals('Plastic'));
+        expect(bloc.state.imagePath, isNull);
+
+        // Now CTA should be enabled
+        ctaButton = tester.widget<ElevatedButton>(ctaFinder);
+        expect(ctaButton.onPressed, isNotNull);
+
+        // Tap the CTA button
+        await tester.tap(ctaFinder);
+        await tester.pumpAndSettle();
+
+        expect(bloc.state.status, equals(NewLotStatus.success));
+        expect(bloc.state.createdLot?.id, equals('lot_real_123'));
+        expect(find.text('Nearby Recyclers Screen'), findsOneWidget);
+
+        bloc.close();
       },
     );
   });

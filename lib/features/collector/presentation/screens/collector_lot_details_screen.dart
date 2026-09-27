@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/storage/read_cache_storage.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/fulfillment_timeline.dart';
 import '../../../../core/widgets/language_audio_sheet.dart';
 import '../../../../core/widgets/offline_stale_banner.dart';
 import '../../../../core/widgets/speaker_button.dart';
@@ -88,10 +90,11 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
         });
       }
     } catch (e) {
-      final cached = await (readCache ?? SharedPreferencesReadCacheStorage()).get<LotEntity>(
-        key: 'lot_detail_${widget.lotId}',
-        fromJson: (json) => LotModel.fromJson(json),
-      );
+      final cached = await (readCache ?? SharedPreferencesReadCacheStorage())
+          .get<LotEntity>(
+            key: 'lot_detail_${widget.lotId}',
+            fromJson: (json) => LotModel.fromJson(json),
+          );
       if (mounted) {
         if (cached != null) {
           setState(() {
@@ -162,17 +165,18 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
           children: [
             const Icon(
               Icons.info_outline_rounded,
-              color: Color(0xFFE65100),
+              color: AppColors.amberPrimary,
               size: 24,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                context.isMarathi
-                    ? 'व्यवहाराची स्थिती'
-                    : 'लेन-देन की स्थिति',
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                context.isMarathi ? 'व्यवहाराची स्थिती' : 'लेन-देन की स्थिति',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppColors.dark900,
+                ),
               ),
             ),
           ],
@@ -182,12 +186,18 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
               ? 'या लॉटसाठी अद्याप व्यवहार तयार केला गेला नाही. रीसायकलरने नोंद केल्यावर हा व्यवहार दिसेल.'
               : 'इस लॉट के लिए रीसाइक्लर द्वारा अभी लेन-देन नहीं बनाया गया है। जैसे ही रीसाइक्लर लेन-देन दर्ज करेगा, यह आपकी लेन-देन सूची में दिखेगा।',
           style: const TextStyle(
-              fontSize: 14, color: Color(0xFF374151), height: 1.4),
+            fontSize: 14,
+            color: AppColors.dark700,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: Text(l10n.confirm),
+            child: Text(
+              l10n.confirm,
+              style: const TextStyle(color: AppColors.dark500),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -195,8 +205,11 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
               Navigator.pushNamed(context, '/collector-transactions');
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF147A65),
+              backgroundColor: AppColors.saffronPrimary,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: Text(
               context.isMarathi ? 'सर्व व्यवहार पहा' : 'सभी लेन-देन देखें',
@@ -212,39 +225,51 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
     final l10n = context.l10n;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
         title: Text(
           l10n.lotDetails,
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            color: AppColors.dark900,
+          ),
         ),
+        backgroundColor: AppColors.pageBackground,
+        elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.dark900),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         actions: [
           InkWell(
             onTap: () => LanguageAudioSheet.show(context),
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: AppColors.saffron50,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                  color: AppColors.saffronPrimary.withValues(alpha: 0.35),
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.language,
-                      size: 15, color: Color(0xFF2E7D32)),
+                  const Icon(
+                    Icons.language,
+                    size: 15,
+                    color: AppColors.saffronDark,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     context.currentLanguage.nativeLabel,
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
+                      color: AppColors.saffronDark,
                     ),
                   ),
                 ],
@@ -263,36 +288,52 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
         child: _isLoading
             ? const Center(
                 child: CircularProgressIndicator(
-                  color: Color(0xFF147A65),
+                  color: AppColors.saffronPrimary,
                   strokeWidth: 3,
                 ),
               )
             : _errorMessage != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.red,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(_errorMessage!, textAlign: TextAlign.center),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _fetchLot,
-                            child: Text(l10n.retry),
-                          ),
-                        ],
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.redPrimary,
                       ),
-                    ),
-                  )
-                : _lot == null
-                    ? const Center(child: Text('लॉट नहीं मिला'))
-                    : _buildLotDetails(_lot!),
+                      const SizedBox(height: 12),
+                      Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppColors.dark700),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _fetchLot,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.saffronPrimary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(l10n.retry),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : _lot == null
+            ? const Center(
+                child: Text(
+                  'लॉट नहीं मिला',
+                  style: TextStyle(color: AppColors.dark700),
+                ),
+              )
+            : _buildLotDetails(_lot!),
       ),
     );
   }
@@ -307,18 +348,23 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_isOffline) ...[
-            OfflineStaleBanner(
-              cachedAt: _cachedAt,
-              onRefresh: _fetchLot,
-            ),
+            OfflineStaleBanner(cachedAt: _cachedAt, onRefresh: _fetchLot),
             const SizedBox(height: 12),
           ],
+          // Material Specifications Card
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: AppColors.borderMedium),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x06000000),
+                  offset: Offset(0, 1),
+                  blurRadius: 3,
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,39 +377,40 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: AppColors.dark900,
                       ),
                     ),
                     _buildStatusChip(lot.status),
                   ],
                 ),
-                const Divider(height: 20),
+                const Divider(height: 24, color: AppColors.border),
                 if (lot.materialName != null &&
                     lot.materialName!.isNotEmpty) ...[
                   _row(l10n.scrapType, lot.materialName!),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                 ] else if (lot.description != null &&
                     lot.description!.isNotEmpty) ...[
                   _row('विवरण', lot.description!),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                 ],
                 _row(
                   context.isMarathi ? 'अंदाजे वजन' : 'अनुमानित वजन',
                   '${lot.estimatedWeight} kg',
                 ),
                 if (lot.actualWeight != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   _row(
                     context.isMarathi ? 'प्रत्यक्ष वजन' : 'वास्तविक वजन',
                     '${lot.actualWeight} kg',
                   ),
                 ],
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 _row(
                   l10n.estimatedPrice,
                   '₹${lot.estimatedPrice.toStringAsFixed(0)}',
                 ),
                 if (lot.finalPrice != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   _row(
                     context.isMarathi ? 'अंतिम किंमत' : 'अंतिम मूल्य',
                     '₹${lot.finalPrice!.toStringAsFixed(0)}',
@@ -374,7 +421,7 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
             ),
           ),
           if (isCompleted) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -412,13 +459,15 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
                     context.isMarathi
                         ? 'या लॉटचा व्यवहार, देयक स्थिती आणि हस्तांतरण पाहण्यासाठी खालील बटण दाबा.'
                         : 'इस लॉट का लेन-देन, भुगतान स्थिति एवं हैंडओवर विवरण देखने के लिए नीचे दिए बटन पर टैप करें।',
-                    style:
-                        const TextStyle(fontSize: 13, color: Color(0xFF2E7D32)),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF2E7D32),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
+                    height: 50,
                     child: ElevatedButton.icon(
                       onPressed: _isCheckingTransaction
                           ? null
@@ -443,13 +492,51 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1B5E20),
                         foregroundColor: Colors.white,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 18),
+          // Lifecycle Fulfillment Timeline
+          FulfillmentTimeline(status: lot.status),
+          // Images Gallery (if photos exist)
+          if (lot.images.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            SizedBox(
+              height: 160,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: lot.images.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  return Container(
+                    width: 160,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.borderMedium),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.network(
+                      lot.images[index],
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Center(
+                        child: Icon(
+                          Icons.image_outlined,
+                          size: 40,
+                          color: AppColors.dark400,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -515,14 +602,14 @@ class _CollectorLotDetailsScreenState extends State<CollectorLotDetailsScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+          style: const TextStyle(fontSize: 14, color: AppColors.dark500),
         ),
         Text(
           value,
           style: TextStyle(
             fontSize: 14,
             fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-            color: const Color(0xFF1F2937),
+            color: isBold ? AppColors.greenPrimary : AppColors.dark900,
           ),
         ),
       ],

@@ -1,5 +1,11 @@
 import '../../domain/entities/user_entity.dart';
 
+double? _toDoubleNullable(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
+}
+
 class UserAddressModel extends UserAddressEntity {
   const UserAddressModel({
     super.street,
@@ -22,20 +28,27 @@ class UserAddressModel extends UserAddressEntity {
   }
 
   factory UserAddressModel.fromJson(Map<String, dynamic> json) {
-    double? lat;
-    double? lng;
+    double? lat = _toDoubleNullable(json['latitude']) ??
+        _toDoubleNullable(json['lat']);
+    double? lng = _toDoubleNullable(json['longitude']) ??
+        _toDoubleNullable(json['lng']);
 
-    final coords = json['coordinates'];
-    if (coords is Map<String, dynamic>) {
+    final coords = json['coordinates'] ?? json['location'];
+    if (coords is Map) {
       final innerList = coords['coordinates'];
       if (innerList is List && innerList.length >= 2) {
         // GeoJSON standard: [longitude, latitude]
-        lng = (innerList[0] as num?)?.toDouble();
-        lat = (innerList[1] as num?)?.toDouble();
+        lng ??= _toDoubleNullable(innerList[0]);
+        lat ??= _toDoubleNullable(innerList[1]);
       }
     } else if (coords is List && coords.length >= 2) {
-      lng = (coords[0] as num?)?.toDouble();
-      lat = (coords[1] as num?)?.toDouble();
+      lng ??= _toDoubleNullable(coords[0]);
+      lat ??= _toDoubleNullable(coords[1]);
+    }
+
+    if (lat != null && lng != null && lat == 0.0 && lng == 0.0) {
+      lat = null;
+      lng = null;
     }
 
     return UserAddressModel(
@@ -54,7 +67,11 @@ class UserAddressModel extends UserAddressEntity {
     if (city != null) map['city'] = city;
     if (state != null) map['state'] = state;
     if (pincode != null) map['pincode'] = pincode;
-    if (latitude != null && longitude != null) {
+    if (latitude != null &&
+        longitude != null &&
+        !(latitude == 0.0 && longitude == 0.0)) {
+      map['latitude'] = latitude;
+      map['longitude'] = longitude;
       map['coordinates'] = {
         'type': 'Point',
         'coordinates': [longitude, latitude],

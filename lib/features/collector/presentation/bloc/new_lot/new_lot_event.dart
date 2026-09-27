@@ -21,14 +21,20 @@ class NewLotImageSelected extends NewLotEvent {
 }
 
 class NewLotCategoryChanged extends NewLotEvent {
-  final String category;
+  final String? category;
+  final bool isManual;
   final String? state;
   final String? city;
 
-  const NewLotCategoryChanged({required this.category, this.state, this.city});
+  const NewLotCategoryChanged({
+    required this.category,
+    this.isManual = true,
+    this.state,
+    this.city,
+  });
 
   @override
-  List<Object?> get props => [category, state, city];
+  List<Object?> get props => [category, isManual, state, city];
 }
 
 class NewLotWeightQuantityChanged extends NewLotEvent {

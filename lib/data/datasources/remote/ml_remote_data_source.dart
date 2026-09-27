@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_config.dart';
 import '../../../domain/entities/ml_predict_and_price_result_entity.dart';
 import '../../models/ml_classification_model.dart';
 import '../../models/ml_price_model.dart';
@@ -112,6 +113,10 @@ class MLRemoteDataSourceImpl implements MLRemoteDataSource {
     final response = await apiClient.post<Map<String, dynamic>>(
       '/ml/classify',
       data: formData,
+      options: Options(
+        sendTimeout: ApiConfig.mlTimeout,
+        receiveTimeout: ApiConfig.mlTimeout,
+      ),
     );
 
     final raw = response.data;
@@ -143,6 +148,10 @@ class MLRemoteDataSourceImpl implements MLRemoteDataSource {
         'quantity': quantity,
         'total_weight_kg': totalWeightKg,
       },
+      options: Options(
+        sendTimeout: ApiConfig.mlTimeout,
+        receiveTimeout: ApiConfig.mlTimeout,
+      ),
     );
 
     final raw = response.data;
@@ -175,6 +184,10 @@ class MLRemoteDataSourceImpl implements MLRemoteDataSource {
     final response = await apiClient.post<Map<String, dynamic>>(
       '/ml/predict-and-price',
       data: formData,
+      options: Options(
+        sendTimeout: ApiConfig.mlTimeout,
+        receiveTimeout: ApiConfig.mlTimeout,
+      ),
     );
 
     final raw = response.data;

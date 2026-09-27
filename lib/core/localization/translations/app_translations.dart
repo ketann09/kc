@@ -65,12 +65,21 @@ abstract class AppTranslations {
   // Scrap Categories
   String get categoryPlastic;
   String get categoryEwaste;
+  String get categoryCrt;
+  String get categoryLcdLed;
   String get categoryMetal;
   String get categoryPaper;
   String get categoryBattery;
   String get categoryCable;
+  String get categoryMotors;
   String get categoryGlass;
   String get categoryOther;
+
+  // Category Source & Unit
+  String get selectedCategoryLabel;
+  String get manualSelection;
+  String get pieceUnit;
+  String get perPiece;
 
   // New Lot & AI Matchmaking
   String get newLotTitle;
@@ -173,6 +182,7 @@ abstract class AppTranslations {
   String get changePhoto => 'फोटो बदलें';
   String get aiClassifying => 'AI पहचान रहा है...';
   String get aiFailed => 'पहचान नहीं हो सकी';
+  String get retryAiScan => 'पुनः AI स्कैन करें';
   String get aiIdentified => 'AI से पहचान';
   String get confidence => 'विश्वास';
   String get scrapType => 'कबाड़ का प्रकार';
@@ -260,4 +270,22 @@ abstract class AppTranslations {
   String get offlineUpdatePaymentBlocked;
   String get offlineConfirmOfferBlocked;
   String get offlineRegisterBlocked;
+
+  // Phase C: Navigation & Account
+  String get confirmLogoutTitle;
+  String get confirmLogoutMessage;
+  String get cancelAction;
+  String get logout;
+  String get navigationMenu;
+  String get dashboardAction;
+  String get accountSettings;
+  String get changePassword;
+  String get currentPassword;
+  String get newPassword;
+  String get confirmNewPassword;
+  String get passwordChangedSuccess;
+  String get passwordsDoNotMatch;
+  String get passwordMinHintValidation;
+  String get currentPasswordRequired;
+  String get updatePasswordAction;
 }

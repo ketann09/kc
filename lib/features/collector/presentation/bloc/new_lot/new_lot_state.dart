@@ -25,6 +25,7 @@ class NewLotState extends Equatable {
   final String? imagePath;
   final MLClassificationEntity? classification;
   final String? category;
+  final bool isManualCategory;
   final double weightKg;
   final int quantity;
   final MLPriceEntity? priceEstimate;
@@ -38,6 +39,7 @@ class NewLotState extends Equatable {
     this.imagePath,
     this.classification,
     this.category,
+    this.isManualCategory = false,
     this.weightKg = 1.0,
     this.quantity = 1,
     this.priceEstimate,
@@ -52,10 +54,14 @@ class NewLotState extends Equatable {
     bool clearErrorMessage = false,
     String? imagePath,
     MLClassificationEntity? classification,
+    bool clearClassification = false,
     String? category,
+    bool clearCategory = false,
+    bool? isManualCategory,
     double? weightKg,
     int? quantity,
     MLPriceEntity? priceEstimate,
+    bool clearPriceEstimate = false,
     LotEntity? createdLot,
     ApiException? lastException,
     bool clearLastException = false,
@@ -67,11 +73,16 @@ class NewLotState extends Equatable {
           ? null
           : (errorMessage ?? this.errorMessage),
       imagePath: imagePath ?? this.imagePath,
-      classification: classification ?? this.classification,
-      category: category ?? this.category,
+      classification: clearClassification
+          ? null
+          : (classification ?? this.classification),
+      category: clearCategory ? null : (category ?? this.category),
+      isManualCategory: isManualCategory ?? this.isManualCategory,
       weightKg: weightKg ?? this.weightKg,
       quantity: quantity ?? this.quantity,
-      priceEstimate: priceEstimate ?? this.priceEstimate,
+      priceEstimate: clearPriceEstimate
+          ? null
+          : (priceEstimate ?? this.priceEstimate),
       createdLot: createdLot ?? this.createdLot,
       lastException: clearLastException
           ? null
@@ -87,6 +98,7 @@ class NewLotState extends Equatable {
     imagePath,
     classification,
     category,
+    isManualCategory,
     weightKg,
     quantity,
     priceEstimate,

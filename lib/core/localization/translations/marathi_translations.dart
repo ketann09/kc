@@ -128,6 +128,10 @@ class MarathiTranslations extends AppTranslations {
   @override
   String get categoryEwaste => 'ई-कचरा';
   @override
+  String get categoryCrt => 'सीआरटी / मॉनिटर';
+  @override
+  String get categoryLcdLed => 'एलसीडी / एलईडी';
+  @override
   String get categoryMetal => 'धातू / लोखंड';
   @override
   String get categoryPaper => 'कागद';
@@ -136,9 +140,20 @@ class MarathiTranslations extends AppTranslations {
   @override
   String get categoryCable => 'केबल';
   @override
+  String get categoryMotors => 'मोटर्स';
+  @override
   String get categoryGlass => 'काच';
   @override
   String get categoryOther => 'इतर';
+
+  @override
+  String get selectedCategoryLabel => 'निवडलेली श्रेणी';
+  @override
+  String get manualSelection => 'मॅन्युअल निवड';
+  @override
+  String get pieceUnit => 'Piece';
+  @override
+  String get perPiece => 'प्रति नग';
 
   // New Lot & AI Matchmaking
   @override
@@ -299,6 +314,8 @@ class MarathiTranslations extends AppTranslations {
   String get aiClassifying => 'AI ओळखत आहे...';
   @override
   String get aiFailed => 'ओळखता आले नाही';
+  @override
+  String get retryAiScan => 'पुन्हा AI स्कॅन करा';
   @override
   String get aiIdentified => 'AI द्वारे ओळख';
   @override
@@ -471,4 +488,39 @@ class MarathiTranslations extends AppTranslations {
   @override
   String get offlineRegisterBlocked =>
       'नवीन खाते तयार करण्यासाठी इंटरनेट कनेक्शन आवश्यक आहे.';
+
+  // Phase C: Navigation & Account
+  @override
+  String get confirmLogoutTitle => 'लॉग आउटची पुष्टी करा';
+  @override
+  String get confirmLogoutMessage =>
+      'तुम्हाला नक्की तुमच्या खात्यातून लॉग आउट करायचे आहे का?';
+  @override
+  String get cancelAction => 'रद्द करा';
+  @override
+  String get logout => 'लॉग आउट';
+  @override
+  String get navigationMenu => 'नेव्हिगेशन मेनू';
+  @override
+  String get dashboardAction => 'डॅशबोर्ड';
+  @override
+  String get accountSettings => 'खाते आणि प्राधान्ये';
+  @override
+  String get changePassword => 'पासवर्ड बदला';
+  @override
+  String get currentPassword => 'सध्याचा पासवर्ड';
+  @override
+  String get newPassword => 'नवीन पासवर्ड';
+  @override
+  String get confirmNewPassword => 'नवीन पासवर्ड पुन्हा प्रविष्ट करा';
+  @override
+  String get passwordChangedSuccess => 'पासवर्ड यशस्वीरित्या बदलला!';
+  @override
+  String get passwordsDoNotMatch => 'नवीन पासवर्ड जुळत नाही';
+  @override
+  String get passwordMinHintValidation => 'पासवर्ड किमान ६ वर्णांचा असावा';
+  @override
+  String get currentPasswordRequired => 'कृपया सध्याचा पासवर्ड प्रविष्ट करा';
+  @override
+  String get updatePasswordAction => 'पासवर्ड अपडेट करा';
 }

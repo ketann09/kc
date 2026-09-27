@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../domain/entities/lot_entity.dart';
@@ -125,12 +126,17 @@ class LotsRemoteDataSourceImpl implements LotsRemoteDataSource {
 
     formData.fields.add(MapEntry('location', jsonEncode(locationMap)));
 
+    debugPrint(
+      '[LOT_DEBUG] Creating lot with location: ${jsonEncode(locationMap)}, category: ${params.category}, weight: ${params.estimatedWeight}, quantity: ${params.quantity}',
+    );
+
     final response = await apiClient.post<Map<String, dynamic>>(
       '/lots',
       data: formData,
     );
 
     final raw = response.data;
+    debugPrint('[LOT_DEBUG] Created lot response: $raw');
     if (raw == null) {
       throw Exception('Empty response when creating lot');
     }
@@ -255,9 +261,7 @@ class LotsRemoteDataSourceImpl implements LotsRemoteDataSource {
     double? actualWeight,
     double? finalPrice,
   }) async {
-    final payload = <String, dynamic>{
-      'status': status,
-    };
+    final payload = <String, dynamic>{'status': status};
     if (actualWeight != null) {
       payload['actualWeight'] = actualWeight;
     }

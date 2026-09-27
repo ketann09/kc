@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/connectivity_service.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/language_audio_sheet.dart';
 import '../../../../core/widgets/offline_blocked_sheet.dart';
 import '../../../../core/widgets/speaker_button.dart';
@@ -101,11 +103,17 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
     return BlocProvider.value(
       value: _bloc,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF9FAFB),
+        backgroundColor: AppColors.pageBackground,
         appBar: AppBar(
+          backgroundColor: AppColors.pageBackground,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
           title: Text(
             context.l10n.transactionDetails,
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.dark900,
+            ),
           ),
           centerTitle: true,
           actions: [
@@ -116,10 +124,10 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: AppColors.saffron100,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                    color: AppColors.saffronPrimary.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -128,7 +136,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                     const Icon(
                       Icons.language,
                       size: 15,
-                      color: Color(0xFF2E7D32),
+                      color: AppColors.saffronDark,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -136,7 +144,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF2E7D32),
+                        color: AppColors.saffronDark,
                       ),
                     ),
                   ],
@@ -168,7 +176,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(state.actionSuccessMessage!),
-                      backgroundColor: const Color(0xFF1B5E20),
+                      backgroundColor: AppColors.green700,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
@@ -197,7 +205,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(state.actionErrorMessage!),
-                        backgroundColor: const Color(0xFFD32F2F),
+                        backgroundColor: AppColors.redPrimary,
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -237,7 +245,12 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 // Show form to create transaction
                 return _buildCreateTransactionState(context);
               }
-              return const Center(child: Text('कोई लेन-देन नहीं चुना गया'));
+              return const Center(
+                child: Text(
+                  'कोई लेन-देन नहीं चुना गया',
+                  style: TextStyle(fontSize: 15, color: AppColors.dark500),
+                ),
+              );
             },
           ),
         ),
@@ -250,14 +263,17 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Color(0xFF147A65), strokeWidth: 3),
+          CircularProgressIndicator(
+            color: AppColors.saffronPrimary,
+            strokeWidth: 3,
+          ),
           SizedBox(height: 20),
           Text(
             'लेन-देन लोड हो रहा है...',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF191919),
+              color: AppColors.dark900,
             ),
           ),
         ],
@@ -275,29 +291,29 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                color: Color(0xFFFFEBEE),
+                color: AppColors.red100,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.error_outline,
+                Icons.error_outline_rounded,
                 size: 48,
-                color: Color(0xFFD32F2F),
+                color: AppColors.redPrimary,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             const Text(
               'त्रुटि हुई',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF191919),
+                color: AppColors.dark900,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: AppColors.dark500),
             ),
             const SizedBox(height: 24),
             if (widget.transactionId != null)
@@ -308,8 +324,16 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('पुनः प्रयास करें'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF147A65),
+                  backgroundColor: AppColors.saffronPrimary,
                   foregroundColor: Colors.white,
+                  minimumSize: const Size(0, 48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
           ],
@@ -329,13 +353,9 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
+          AppCard(
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
+            borderRadius: 16,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -343,7 +363,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   children: [
                     const Icon(
                       Icons.receipt_long_outlined,
-                      color: Color(0xFF147A65),
+                      color: AppColors.saffronDark,
                       size: 24,
                     ),
                     const SizedBox(width: 8),
@@ -353,13 +373,13 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F2937),
+                          color: AppColors.dark900,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const Divider(height: 24),
+                const Divider(height: 24, color: AppColors.borderMedium),
                 _summaryRow(
                   'अनुमानित वजन',
                   '${estWeight.toStringAsFixed(1)} किग्रा',
@@ -375,7 +395,11 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
           const SizedBox(height: 20),
           const Text(
             'लेन-देन राशि (₹)',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: AppColors.dark700,
+            ),
           ),
           const SizedBox(height: 6),
           TextField(
@@ -388,14 +412,29 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
               fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: const BorderSide(color: AppColors.borderMedium),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.borderMedium),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppColors.saffronPrimary,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 16),
           const Text(
             'भुगतान विधि चुनें',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: AppColors.dark700,
+            ),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -413,11 +452,9 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                     });
                   }
                 },
-                selectedColor: const Color(0xFFE8F5E9),
+                selectedColor: AppColors.saffron100,
                 labelStyle: TextStyle(
-                  color: isSelected
-                      ? const Color(0xFF1B5E20)
-                      : const Color(0xFF374151),
+                  color: isSelected ? AppColors.saffronDark : AppColors.dark700,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
                 ),
               );
@@ -426,7 +463,11 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
           const SizedBox(height: 16),
           const Text(
             'टिप्पणी (वैकल्पिक)',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: AppColors.dark700,
+            ),
           ),
           const SizedBox(height: 6),
           TextField(
@@ -438,7 +479,18 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
               fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: const BorderSide(color: AppColors.borderMedium),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.borderMedium),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppColors.saffronPrimary,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -446,17 +498,22 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              color: AppColors.saffron50,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.saffron200),
             ),
             child: const Row(
               children: [
-                Icon(Icons.info_outline, size: 18, color: Color(0xFF6B7280)),
+                Icon(
+                  Icons.info_outline,
+                  size: 18,
+                  color: AppColors.saffronDark,
+                ),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'प्लेटफ़ॉर्म शुल्क 5% स्वतः लागू होगा और शुद्ध राशि की गणना होगी।',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
+                    style: TextStyle(fontSize: 12, color: AppColors.dark600),
                   ),
                 ),
               ],
@@ -465,7 +522,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            height: 50,
+            height: 56,
             child: ElevatedButton(
               onPressed: () {
                 ConnectivityService? connectivity;
@@ -488,7 +545,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('कृपया मान्य राशि दर्ज करें'),
-                      backgroundColor: Color(0xFFD32F2F),
+                      backgroundColor: AppColors.redPrimary,
                     ),
                   );
                   return;
@@ -508,8 +565,9 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147A65),
+                backgroundColor: AppColors.saffronPrimary,
                 foregroundColor: Colors.white,
+                elevation: 1,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -556,31 +614,26 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
     Color statusBgColor;
     switch (txn.status) {
       case TransactionStatus.completed:
-        statusColor = const Color(0xFF1B5E20);
-        statusBgColor = const Color(0xFFE8F5E9);
+        statusColor = AppColors.green700;
+        statusBgColor = AppColors.green100;
         break;
       case TransactionStatus.inProgress:
-        statusColor = const Color(0xFFE65100);
-        statusBgColor = const Color(0xFFFFF3E0);
+        statusColor = AppColors.amber700;
+        statusBgColor = AppColors.amber100;
         break;
       case TransactionStatus.failed:
       case TransactionStatus.refunded:
-        statusColor = const Color(0xFFC62828);
-        statusBgColor = const Color(0xFFFFEBEE);
+        statusColor = AppColors.redPrimary;
+        statusBgColor = AppColors.red100;
         break;
       case TransactionStatus.initiated:
-        statusColor = const Color(0xFF1565C0);
-        statusBgColor = const Color(0xFFE3F2FD);
+        statusColor = AppColors.blue700;
+        statusBgColor = AppColors.blue100;
     }
 
-    return Container(
-      width: double.infinity,
+    return AppCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+      borderRadius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -593,6 +646,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
+                  color: AppColors.dark900,
                 ),
               ),
               Container(
@@ -619,7 +673,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
             const SizedBox(height: 6),
             Text(
               'दिनांक: ${txn.createdAt!.day}/${txn.createdAt!.month}/${txn.createdAt!.year}',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: const TextStyle(fontSize: 13, color: AppColors.dark500),
             ),
           ],
           if (txn.lotId.isNotEmpty) ...[
@@ -629,7 +683,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF4B5563),
+                color: AppColors.dark600,
               ),
             ),
           ],
@@ -639,29 +693,28 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
   }
 
   Widget _buildPartiesCard(TransactionEntity txn) {
-    return Container(
-      width: double.infinity,
+    return AppCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+      borderRadius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'पक्षकार विवरण',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.dark900,
+            ),
           ),
-          const Divider(height: 20),
+          const Divider(height: 20, color: AppColors.borderMedium),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Icon(
                 Icons.person_outline,
                 size: 20,
-                color: Color(0xFF147A65),
+                color: AppColors.saffronDark,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -670,7 +723,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   children: [
                     const Text(
                       'कलेक्टर (विक्रेता):',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      style: TextStyle(fontSize: 12, color: AppColors.dark500),
                     ),
                     Text(
                       txn.collectorName ??
@@ -678,22 +731,23 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
+                        color: AppColors.dark900,
                       ),
                     ),
                     if (txn.collectorPhone != null)
                       Text(
                         txn.collectorPhone!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: AppColors.dark500,
                         ),
                       ),
                     if (txn.collectorAddress != null)
                       Text(
                         txn.collectorAddress!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: AppColors.dark500,
                         ),
                       ),
                   ],
@@ -708,7 +762,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
               const Icon(
                 Icons.recycling_outlined,
                 size: 20,
-                color: Color(0xFF1565C0),
+                color: AppColors.greenPrimary,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -717,7 +771,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   children: [
                     const Text(
                       'रीसाइक्लर (क्रेता):',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      style: TextStyle(fontSize: 12, color: AppColors.dark500),
                     ),
                     Text(
                       txn.recyclerName ??
@@ -725,22 +779,23 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
+                        color: AppColors.dark900,
                       ),
                     ),
                     if (txn.recyclerPhone != null)
                       Text(
                         txn.recyclerPhone!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: AppColors.dark500,
                         ),
                       ),
                     if (txn.recyclerAddress != null)
                       Text(
                         txn.recyclerAddress!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: AppColors.dark500,
                         ),
                       ),
                   ],
@@ -754,22 +809,21 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
   }
 
   Widget _buildFinancialCard(TransactionEntity txn) {
-    return Container(
-      width: double.infinity,
+    return AppCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+      borderRadius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'वित्तीय एवं वजन विवरण',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.dark900,
+            ),
           ),
-          const Divider(height: 20),
+          const Divider(height: 20, color: AppColors.borderMedium),
           _summaryRow(
             'कुल राशि',
             '₹${txn.amount.toStringAsFixed(0)}',
@@ -779,16 +833,16 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
           _summaryRow(
             'प्लेटफ़ॉर्म शुल्क (5%)',
             '- ₹${txn.commission.platformFee.toStringAsFixed(0)}',
-            textColor: const Color(0xFFC62828),
+            textColor: AppColors.redPrimary,
           ),
           const SizedBox(height: 8),
           _summaryRow(
             'शुद्ध देय राशि',
             '₹${txn.commission.netAmount.toStringAsFixed(0)}',
             isBold: true,
-            textColor: const Color(0xFF1B5E20),
+            textColor: AppColors.greenPrimary,
           ),
-          const Divider(height: 20),
+          const Divider(height: 20, color: AppColors.borderMedium),
           _summaryRow(
             'वास्तविक वजन',
             '${txn.weightDetails.actualWeight.toStringAsFixed(1)} ${txn.weightDetails.weightUnit}',
@@ -806,13 +860,13 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
             ),
           ],
           if (txn.notes != null && txn.notes!.isNotEmpty) ...[
-            const Divider(height: 20),
+            const Divider(height: 20, color: AppColors.borderMedium),
             Text(
               'टिप्पणी: ${txn.notes!}',
               style: const TextStyle(
                 fontSize: 13,
                 fontStyle: FontStyle.italic,
-                color: Color(0xFF4B5563),
+                color: AppColors.dark600,
               ),
             ),
           ],
@@ -828,18 +882,9 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
     final txn = state.transaction;
     final isHandoverDone = txn.handoverDetails.isCompleted;
 
-    return Container(
-      width: double.infinity,
+    return AppCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isHandoverDone
-              ? const Color(0xFFA5D6A7)
-              : Colors.grey.shade200,
-        ),
-      ),
+      borderRadius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -850,13 +895,17 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 children: [
                   Icon(
                     Icons.inventory_outlined,
-                    color: Color(0xFF147A65),
+                    color: AppColors.saffronDark,
                     size: 22,
                   ),
                   SizedBox(width: 8),
                   Text(
                     'हैंडओवर सत्यापन',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.dark900,
+                    ),
                   ),
                 ],
               ),
@@ -867,8 +916,8 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: isHandoverDone
-                      ? const Color(0xFFE8F5E9)
-                      : const Color(0xFFFFF3E0),
+                      ? AppColors.green100
+                      : AppColors.amber100,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -877,14 +926,14 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: isHandoverDone
-                        ? const Color(0xFF1B5E20)
-                        : const Color(0xFFE65100),
+                        ? AppColors.green700
+                        : AppColors.amber700,
                   ),
                 ),
               ),
             ],
           ),
-          const Divider(height: 20),
+          const Divider(height: 20, color: AppColors.borderMedium),
           if (isHandoverDone) ...[
             if (txn.handoverDetails.receivedBy != null)
               _summaryRow('प्राप्तकर्ता', txn.handoverDetails.receivedBy!),
@@ -910,11 +959,12 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
           ] else ...[
             const Text(
               'सामग्री प्राप्ति एवं सत्यापन विवरण दर्ज करें।',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              style: TextStyle(fontSize: 13, color: AppColors.dark500),
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
+              height: 48,
               child: OutlinedButton.icon(
                 onPressed: state.isSubmittingHandover
                     ? null
@@ -928,8 +978,8 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                     : const Icon(Icons.check_box_outlined),
                 label: const Text('हैंडओवर विवरण दर्ज करें'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF147A65),
-                  side: const BorderSide(color: Color(0xFF147A65)),
+                  foregroundColor: AppColors.saffronDark,
+                  side: const BorderSide(color: AppColors.saffronPrimary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -953,28 +1003,21 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
     Color paymentFg;
     switch (txn.paymentStatus) {
       case PaymentStatus.completed:
-        paymentBg = const Color(0xFFE8F5E9);
-        paymentFg = const Color(0xFF1B5E20);
+        paymentBg = AppColors.green100;
+        paymentFg = AppColors.green700;
         break;
       case PaymentStatus.failed:
-        paymentBg = const Color(0xFFFFEBEE);
-        paymentFg = const Color(0xFFC62828);
+        paymentBg = AppColors.red100;
+        paymentFg = AppColors.redPrimary;
         break;
       case PaymentStatus.pending:
-        paymentBg = const Color(0xFFFFF3E0);
-        paymentFg = const Color(0xFFE65100);
+        paymentBg = AppColors.amber100;
+        paymentFg = AppColors.amber700;
     }
 
-    return Container(
-      width: double.infinity,
+    return AppCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isPaid ? const Color(0xFFA5D6A7) : Colors.grey.shade200,
-        ),
-      ),
+      borderRadius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -985,13 +1028,17 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 children: [
                   Icon(
                     Icons.payment_outlined,
-                    color: Color(0xFF147A65),
+                    color: AppColors.greenPrimary,
                     size: 22,
                   ),
                   SizedBox(width: 8),
                   Text(
                     'भुगतान स्थिति',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.dark900,
+                    ),
                   ),
                 ],
               ),
@@ -1015,7 +1062,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
               ),
             ],
           ),
-          const Divider(height: 20),
+          const Divider(height: 20, color: AppColors.borderMedium),
           _summaryRow('भुगतान विधि', txn.paymentMethod.hindiLabel),
           if (txn.paymentDetails.transactionId != null &&
               txn.paymentDetails.transactionId!.isNotEmpty) ...[
@@ -1034,13 +1081,13 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: AppColors.green50,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFA5D6A7)),
+                border: Border.all(color: AppColors.green100),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.verified, color: Color(0xFF1B5E20), size: 20),
+                  Icon(Icons.verified, color: AppColors.green700, size: 20),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1048,7 +1095,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1B5E20),
+                        color: AppColors.green700,
                       ),
                     ),
                   ),
@@ -1059,7 +1106,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
             // Recycler-only payment trigger
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 56,
               child: ElevatedButton.icon(
                 onPressed: state.isSubmittingPayment
                     ? null
@@ -1076,11 +1123,13 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                     : const Icon(Icons.check_circle_outline),
                 label: const Text(
                   'भुगतान दर्ज करें',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B5E20),
+                  backgroundColor: AppColors.greenPrimary,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.green100,
+                  disabledForegroundColor: Colors.white70,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1092,17 +1141,18 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.borderMedium),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.lock_outline, size: 18, color: Color(0xFF6B7280)),
+                  Icon(Icons.lock_outline, size: 18, color: AppColors.dark500),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'भुगतान केवल रीसाइक्लर द्वारा दर्ज किया जा सकता है। कृपया प्रतीक्षा करें।',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
+                      style: TextStyle(fontSize: 12, color: AppColors.dark600),
                     ),
                   ),
                 ],
@@ -1135,7 +1185,11 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
             children: [
               const Text(
                 'हैंडओवर विवरण दर्ज करें',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.dark900,
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -1145,6 +1199,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   hintText: 'सामग्री प्राप्त करने वाले का नाम',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.borderMedium),
                   ),
                 ),
               ),
@@ -1156,6 +1211,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   hintText: 'सामग्री जांचने वाले का नाम',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.borderMedium),
                   ),
                 ),
               ),
@@ -1171,7 +1227,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('कृपया कम से कम एक विवरण दर्ज करें'),
-                          backgroundColor: Color(0xFFD32F2F),
+                          backgroundColor: AppColors.redPrimary,
                         ),
                       );
                       return;
@@ -1203,7 +1259,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF147A65),
+                    backgroundColor: AppColors.saffronPrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1242,12 +1298,20 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 children: [
                   const Text(
                     'भुगतान स्थिति अपडेट करें',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.dark900,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   const Text(
                     'भुगतान की स्थिति:',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.dark700,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -1256,7 +1320,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                         label: const Text('पूर्ण (Completed)'),
                         selected:
                             _selectedPaymentStatus == PaymentStatus.completed,
-                        selectedColor: const Color(0xFFE8F5E9),
+                        selectedColor: AppColors.green100,
                         onSelected: (selected) {
                           if (selected) {
                             setModalState(() {
@@ -1270,7 +1334,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                         label: const Text('विफल (Failed)'),
                         selected:
                             _selectedPaymentStatus == PaymentStatus.failed,
-                        selectedColor: const Color(0xFFFFEBEE),
+                        selectedColor: AppColors.red100,
                         onSelected: (selected) {
                           if (selected) {
                             setModalState(() {
@@ -1289,6 +1353,9 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                       hintText: 'उदा. UPI Ref 123456789',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                          color: AppColors.borderMedium,
+                        ),
                       ),
                     ),
                   ),
@@ -1300,6 +1367,9 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                       hintText: 'https://...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                          color: AppColors.borderMedium,
+                        ),
                       ),
                     ),
                   ),
@@ -1307,15 +1377,15 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3E0),
+                      color: AppColors.amber50,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFFFB74D)),
+                      border: Border.all(color: AppColors.amber200),
                     ),
                     child: const Row(
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: Color(0xFFE65100),
+                          color: AppColors.amber700,
                           size: 18,
                         ),
                         SizedBox(width: 8),
@@ -1324,7 +1394,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                             'भुगतान पूर्ण करने पर बैकएंड में लेज़र प्रविष्टि स्वतः दर्ज हो जाएगी।',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFFE65100),
+                              color: AppColors.amber700,
                             ),
                           ),
                         ),
@@ -1334,7 +1404,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
+                    height: 56,
                     child: ElevatedButton(
                       onPressed: () {
                         ConnectivityService? connectivity;
@@ -1370,13 +1440,19 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B5E20),
+                        backgroundColor: AppColors.greenPrimary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text('पुष्टि करें एवं सहेजें'),
+                      child: const Text(
+                        'पुष्टि करें एवं सहेजें',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1400,7 +1476,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.grey.shade700,
+            color: AppColors.dark700,
             fontSize: 14,
             fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
           ),
@@ -1410,7 +1486,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
           style: TextStyle(
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
             fontSize: isBold ? 15 : 14,
-            color: textColor ?? const Color(0xFF1F2937),
+            color: textColor ?? AppColors.dark900,
           ),
         ),
       ],

@@ -1,7 +1,10 @@
 class ApiConfig {
   ApiConfig._();
 
-  static const String _rawBaseUrl = String.fromEnvironment('API_BASE_URL');
+  static const String _rawBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://kabadiwala-connect-backend.onrender.com',
+  );
 
   /// The standard API version prefix used across all backend endpoints.
   static const String defaultApiPrefix = '/api/v1';
@@ -32,8 +35,11 @@ class ApiConfig {
   /// Whether an API_BASE_URL has been supplied via environment.
   static bool get isConfigured => _rawBaseUrl.trim().isNotEmpty;
 
-  /// Default timeout values for network requests.
+  /// Default timeout values for standard network requests.
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);
   static const Duration sendTimeout = Duration(seconds: 15);
+
+  /// Dedicated timeout for heavy ML classification and pricing requests.
+  static const Duration mlTimeout = Duration(seconds: 45);
 }

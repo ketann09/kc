@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/storage/read_cache_storage.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/language_audio_sheet.dart';
 import '../../../../core/widgets/offline_stale_banner.dart';
 import '../../../../core/widgets/speaker_button.dart';
@@ -99,41 +100,52 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
     final l10n = context.l10n;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
         title: Text(
           l10n.myLotsAction,
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: AppColors.dark900,
+          ),
         ),
         elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF191919),
+        foregroundColor: AppColors.dark900,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.border, height: 1),
+        ),
         actions: [
           InkWell(
             onTap: () => LanguageAudioSheet.show(context),
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: AppColors.green50,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                  color: AppColors.greenPrimary.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.language,
-                      size: 15, color: Color(0xFF2E7D32)),
+                  const Icon(
+                    Icons.language,
+                    size: 15,
+                    color: AppColors.greenPrimary,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     context.currentLanguage.nativeLabel,
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
+                      color: AppColors.greenPrimary,
                     ),
                   ),
                 ],
@@ -144,9 +156,7 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
             builder: (context, state) {
               final isOffline = state is CollectorLotsLoaded && state.isOffline;
               final prefix = isOffline ? '${l10n.offlineStaleNotice}। ' : '';
-              return SpeakerButton(
-                textToSpeak: '$prefix${l10n.myRecentLots}.',
-              );
+              return SpeakerButton(textToSpeak: '$prefix${l10n.myRecentLots}.');
             },
           ),
           const SizedBox(width: 8),
@@ -202,8 +212,11 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
     final l10n = context.l10n;
 
     return Container(
-      color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -228,19 +241,18 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
         label,
         style: TextStyle(
           fontSize: 14,
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-          color: isSelected ? Colors.white : const Color(0xFF374151),
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+          color: isSelected ? Colors.white : AppColors.dark700,
         ),
       ),
       selected: isSelected,
-      selectedColor: const Color(0xFF147A65),
-      backgroundColor: const Color(0xFFF3F4F6),
+      selectedColor: AppColors.saffronPrimary,
+      backgroundColor: AppColors.saffron50,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color:
-              isSelected ? const Color(0xFF147A65) : const Color(0xFFE5E7EB),
+          color: isSelected ? AppColors.saffronPrimary : AppColors.saffron200,
         ),
       ),
       onSelected: (selected) {
@@ -260,14 +272,16 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const CircularProgressIndicator(
-              color: Color(0xFF147A65), strokeWidth: 3),
+            color: AppColors.saffronPrimary,
+            strokeWidth: 3,
+          ),
           const SizedBox(height: 16),
           Text(
             l10n.lotsLoading,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF374151),
+              color: AppColors.dark700,
             ),
           ),
         ],
@@ -286,13 +300,13 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                color: Color(0xFFFFEBEE),
+                color: Color(0xFFFEE2E2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.error_outline_rounded,
                 size: 48,
-                color: Color(0xFFD32F2F),
+                color: AppColors.redPrimary,
               ),
             ),
             const SizedBox(height: 16),
@@ -301,14 +315,14 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
+                color: AppColors.dark900,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: AppColors.dark500),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -320,10 +334,10 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
               icon: const Icon(Icons.refresh),
               label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147A65),
+                backgroundColor: AppColors.saffronPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -345,13 +359,13 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                color: Color(0xFFEAF5EF),
+                color: AppColors.saffron50,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.inventory_2_outlined,
                 size: 48,
-                color: Color(0xFF147A65),
+                color: AppColors.saffronPrimary,
               ),
             ),
             const SizedBox(height: 16),
@@ -360,14 +374,14 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
+                color: AppColors.dark900,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.noScrapLotsSubtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: AppColors.dark500),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -377,14 +391,14 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
               icon: const Icon(Icons.add_rounded),
               label: Text(l10n.createNewLotButton),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147A65),
+                backgroundColor: AppColors.saffronPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
-                  vertical: 12,
+                  vertical: 14,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
             ),
@@ -396,7 +410,8 @@ class _CollectorLotsViewState extends State<_CollectorLotsView> {
 
   Widget _buildLoadedList(BuildContext context, List<LotEntity> lots) {
     return RefreshIndicator(
-      color: const Color(0xFF147A65),
+      color: AppColors.saffronPrimary,
+      backgroundColor: Colors.white,
       onRefresh: () async {
         context.read<CollectorLotsBloc>().add(
           const CollectorLotsFetchRequested(refresh: true),
@@ -424,11 +439,11 @@ class _CollectorLotCard extends StatelessWidget {
     final title = (lot.materialName != null && lot.materialName!.isNotEmpty)
         ? lot.materialName!
         : (lot.mlPrediction?.predictedCategory != null &&
-                lot.mlPrediction!.predictedCategory!.isNotEmpty)
-            ? lot.mlPrediction!.predictedCategory!
-            : (lot.description != null && lot.description!.isNotEmpty)
-                ? lot.description!
-                : (context.isMarathi ? 'कबाडी लॉट' : 'कबाड़ लॉट');
+              lot.mlPrediction!.predictedCategory!.isNotEmpty)
+        ? lot.mlPrediction!.predictedCategory!
+        : (lot.description != null && lot.description!.isNotEmpty)
+        ? lot.description!
+        : (context.isMarathi ? 'कबाडी लॉट' : 'कबाड़ लॉट');
 
     final weight = lot.actualWeight ?? lot.estimatedWeight;
     final unit = context.l10n.kgUnit;
@@ -452,7 +467,7 @@ class _CollectorLotCard extends StatelessWidget {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      elevation: 0.5,
+      elevation: 0,
       child: InkWell(
         onTap: () {
           Navigator.pushNamed(
@@ -466,7 +481,14 @@ class _CollectorLotCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: AppColors.borderMedium),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x06000000),
+                offset: Offset(0, 1),
+                blurRadius: 3,
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,12 +500,12 @@ class _CollectorLotCard extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEAF5EF),
+                      color: AppColors.saffron50,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.recycling_rounded,
-                      color: Color(0xFF147A65),
+                      color: AppColors.saffronPrimary,
                       size: 24,
                     ),
                   ),
@@ -497,7 +519,7 @@ class _CollectorLotCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF191919),
+                            color: AppColors.dark900,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -507,7 +529,7 @@ class _CollectorLotCard extends StatelessWidget {
                           dateStr,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF6B7280),
+                            color: AppColors.dark500,
                           ),
                         ),
                       ],
@@ -520,7 +542,7 @@ class _CollectorLotCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: statusBg,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -541,7 +563,7 @@ class _CollectorLotCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              const Divider(height: 1, color: Color(0xFFF3F4F6)),
+              const Divider(height: 1, color: AppColors.border),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -551,7 +573,7 @@ class _CollectorLotCard extends StatelessWidget {
                       const Icon(
                         Icons.scale_rounded,
                         size: 16,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.dark400,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -559,7 +581,7 @@ class _CollectorLotCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF374151),
+                          color: AppColors.dark700,
                         ),
                       ),
                     ],
@@ -571,14 +593,14 @@ class _CollectorLotCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF147A65),
+                          color: AppColors.greenPrimary,
                         ),
                       ),
                       const SizedBox(width: 4),
                       const Icon(
                         Icons.chevron_right_rounded,
                         size: 20,
-                        color: Color(0xFF9CA3AF),
+                        color: AppColors.dark400,
                       ),
                     ],
                   ),
@@ -599,43 +621,43 @@ class _CollectorLotCard extends StatelessWidget {
     switch (status) {
       case LotStatus.pending:
         return (
-          const Color(0xFFFFF3E0),
-          const Color(0xFFE65100),
+          AppColors.amber50,
+          AppColors.amberPrimary,
           Icons.hourglass_top_rounded,
           l10n.statusPending,
         );
       case LotStatus.accepted:
         return (
-          const Color(0xFFE3F2FD),
-          const Color(0xFF1565C0),
+          const Color(0xFFEFF6FF),
+          const Color(0xFF2563EB),
           Icons.handshake_outlined,
           l10n.statusAccepted,
         );
       case LotStatus.picked:
         return (
-          const Color(0xFFF3E5F5),
-          const Color(0xFF7B1FA2),
+          const Color(0xFFF5F3FF),
+          const Color(0xFF7C3AED),
           Icons.local_shipping_outlined,
           l10n.statusPicked,
         );
       case LotStatus.delivered:
         return (
-          const Color(0xFFEDE7F6),
-          const Color(0xFF512DA8),
+          const Color(0xFFFDF2F8),
+          const Color(0xFFDB2777),
           Icons.inventory_2_outlined,
           l10n.statusDelivered,
         );
       case LotStatus.completed:
         return (
-          const Color(0xFFE8F5E9),
-          const Color(0xFF2E7D32),
+          AppColors.green50,
+          AppColors.greenPrimary,
           Icons.check_circle_outline_rounded,
           l10n.statusCompleted,
         );
       case LotStatus.cancelled:
         return (
-          const Color(0xFFFFEBEE),
-          const Color(0xFFC62828),
+          const Color(0xFFFEF2F2),
+          const Color(0xFFDC2626),
           Icons.cancel_outlined,
           l10n.statusCancelled,
         );

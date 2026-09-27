@@ -127,6 +127,10 @@ class EnglishTranslations extends AppTranslations {
   @override
   String get categoryEwaste => 'E-Waste';
   @override
+  String get categoryCrt => 'CRT / Monitor';
+  @override
+  String get categoryLcdLed => 'LCD / LED';
+  @override
   String get categoryMetal => 'Metal / Iron';
   @override
   String get categoryPaper => 'Paper';
@@ -135,9 +139,20 @@ class EnglishTranslations extends AppTranslations {
   @override
   String get categoryCable => 'Cable';
   @override
+  String get categoryMotors => 'Motors';
+  @override
   String get categoryGlass => 'Glass';
   @override
   String get categoryOther => 'Other';
+
+  @override
+  String get selectedCategoryLabel => 'Selected Category';
+  @override
+  String get manualSelection => 'Manual Selection';
+  @override
+  String get pieceUnit => 'Piece';
+  @override
+  String get perPiece => 'per piece';
 
   // New Lot & AI Matchmaking
   @override
@@ -298,6 +313,8 @@ class EnglishTranslations extends AppTranslations {
   String get aiClassifying => 'AI Classifying...';
   @override
   String get aiFailed => 'Classification Failed';
+  @override
+  String get retryAiScan => 'Retry AI Scan';
   @override
   String get aiIdentified => 'AI Identification';
   @override
@@ -482,4 +499,40 @@ class EnglishTranslations extends AppTranslations {
   @override
   String get offlineRegisterBlocked =>
       'Creating an account requires an internet connection.';
+
+  // Phase C: Navigation & Account
+  @override
+  String get confirmLogoutTitle => 'Confirm Logout';
+  @override
+  String get confirmLogoutMessage =>
+      'Are you sure you want to log out of your account?';
+  @override
+  String get cancelAction => 'Cancel';
+  @override
+  String get logout => 'Log Out';
+  @override
+  String get navigationMenu => 'Navigation Menu';
+  @override
+  String get dashboardAction => 'Dashboard';
+  @override
+  String get accountSettings => 'Account & Preferences';
+  @override
+  String get changePassword => 'Change Password';
+  @override
+  String get currentPassword => 'Current Password';
+  @override
+  String get newPassword => 'New Password';
+  @override
+  String get confirmNewPassword => 'Confirm New Password';
+  @override
+  String get passwordChangedSuccess => 'Password changed successfully!';
+  @override
+  String get passwordsDoNotMatch => 'New passwords do not match';
+  @override
+  String get passwordMinHintValidation =>
+      'Password must be at least 6 characters';
+  @override
+  String get currentPasswordRequired => 'Please enter your current password';
+  @override
+  String get updatePasswordAction => 'Update Password';
 }

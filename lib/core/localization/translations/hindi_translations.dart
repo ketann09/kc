@@ -129,6 +129,10 @@ class HindiTranslations extends AppTranslations {
   @override
   String get categoryEwaste => 'ई-वेस्ट';
   @override
+  String get categoryCrt => 'सीआरटी / टीवी मॉनिटर';
+  @override
+  String get categoryLcdLed => 'एलसीडी / एलईडी स्क्रीन';
+  @override
   String get categoryPcb => 'पीसीबी / ई-कचरा';
   @override
   String get categoryMetal => 'धातु / लोहा';
@@ -139,9 +143,20 @@ class HindiTranslations extends AppTranslations {
   @override
   String get categoryCable => 'केबल';
   @override
+  String get categoryMotors => 'मोटर व पुर्जे';
+  @override
   String get categoryGlass => 'कांच';
   @override
   String get categoryOther => 'अन्य';
+
+  @override
+  String get selectedCategoryLabel => 'चयनित श्रेणी';
+  @override
+  String get manualSelection => 'मैन्युअल चयन';
+  @override
+  String get pieceUnit => 'Piece';
+  @override
+  String get perPiece => 'प्रति पीस';
 
   // New Lot & AI Matchmaking
   @override
@@ -365,4 +380,40 @@ class HindiTranslations extends AppTranslations {
   @override
   String get offlineRegisterBlocked =>
       'नया खाता बनाने के लिए इंटरनेट कनेक्शन आवश्यक है।';
+
+  // Phase C: Navigation & Account
+  @override
+  String get confirmLogoutTitle => 'लॉग आउट की पुष्टि करें';
+  @override
+  String get confirmLogoutMessage =>
+      'क्या आप वाकई अपने खाते से लॉग आउट करना चाहते हैं?';
+  @override
+  String get cancelAction => 'रद्द करें';
+  @override
+  String get logout => 'लॉग आउट';
+  @override
+  String get navigationMenu => 'नेविगेशन मेनू';
+  @override
+  String get dashboardAction => 'डैशबोर्ड';
+  @override
+  String get accountSettings => 'खाता और प्राथमिकताएं';
+  @override
+  String get changePassword => 'पासवर्ड बदलें';
+  @override
+  String get currentPassword => 'मौजूदा पासवर्ड';
+  @override
+  String get newPassword => 'नया पासवर्ड';
+  @override
+  String get confirmNewPassword => 'नया पासवर्ड दोबारा लिखें';
+  @override
+  String get passwordChangedSuccess => 'पासवर्ड सफलतापूर्वक बदल दिया गया!';
+  @override
+  String get passwordsDoNotMatch => 'नया पासवर्ड मेल नहीं खाता';
+  @override
+  String get passwordMinHintValidation =>
+      'पासवर्ड कम से कम 6 अक्षरों का होना चाहिए';
+  @override
+  String get currentPasswordRequired => 'कृपया मौजूदा पासवर्ड दर्ज करें';
+  @override
+  String get updatePasswordAction => 'पासवर्ड अपडेट करें';
 }

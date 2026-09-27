@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/connectivity_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_stepper.dart';
 import '../../core/widgets/language_audio_sheet.dart';
 import '../../core/widgets/offline_blocked_sheet.dart';
 import '../../core/widgets/speaker_button.dart';
@@ -80,6 +82,27 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
       value: 'E-Waste',
       icon: Icons.memory_rounded,
     ),
+    _CategoryOption(labelKey: 'crt', value: 'CRT', icon: Icons.tv_rounded),
+    _CategoryOption(
+      labelKey: 'lcd_led',
+      value: 'LCD_LED',
+      icon: Icons.monitor_rounded,
+    ),
+    _CategoryOption(
+      labelKey: 'cable',
+      value: 'Cable',
+      icon: Icons.cable_rounded,
+    ),
+    _CategoryOption(
+      labelKey: 'battery',
+      value: 'Battery',
+      icon: Icons.battery_full_rounded,
+    ),
+    _CategoryOption(
+      labelKey: 'motors',
+      value: 'Motors',
+      icon: Icons.settings_suggest_rounded,
+    ),
     _CategoryOption(
       labelKey: 'metal',
       value: 'Metal',
@@ -89,16 +112,6 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
       labelKey: 'paper',
       value: 'Paper',
       icon: Icons.description_rounded,
-    ),
-    _CategoryOption(
-      labelKey: 'battery',
-      value: 'Battery',
-      icon: Icons.battery_full_rounded,
-    ),
-    _CategoryOption(
-      labelKey: 'cable',
-      value: 'Cable',
-      icon: Icons.cable_rounded,
     ),
     _CategoryOption(
       labelKey: 'other',
@@ -138,15 +151,13 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
       }
     } catch (_) {}
 
-    if (stateName == null ||
-        stateName.isEmpty ||
-        cityName == null ||
-        cityName.isEmpty) {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is Map) {
-        stateName ??= args['state'] as String?;
-        cityName ??= args['city'] as String?;
-      }
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      stateName ??= args['state'] as String?;
+      cityName ??= args['city'] as String?;
+      street ??= args['street'] as String? ?? args['address'] as String?;
+      lat ??= (args['latitude'] as num?)?.toDouble();
+      lng ??= (args['longitude'] as num?)?.toDouble();
     }
 
     final fullAddress =
@@ -169,7 +180,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
     try {
       final XFile? photo = await _picker.pickImage(
         source: source,
-        imageQuality: 85,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
       );
 
       if (photo != null && mounted) {
@@ -191,6 +204,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
     final l10n = context.l10n;
     showModalBottomSheet<void>(
       context: context,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -213,17 +227,17 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF191919),
+                      color: AppColors.dark900,
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 ListTile(
                   leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFEAF5EF),
+                    backgroundColor: AppColors.saffron50,
                     child: Icon(
                       Icons.camera_alt_rounded,
-                      color: Color(0xFF176B45),
+                      color: AppColors.saffronPrimary,
                     ),
                   ),
                   title: Text(l10n.camera),
@@ -234,10 +248,10 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 ),
                 ListTile(
                   leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFEAF5EF),
+                    backgroundColor: AppColors.saffron50,
                     child: Icon(
                       Icons.photo_library_rounded,
-                      color: Color(0xFF176B45),
+                      color: AppColors.saffronPrimary,
                     ),
                   ),
                   title: Text(l10n.gallery),
@@ -254,6 +268,12 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
     );
   }
 
+  bool _isPieceBased(NewLotState state) {
+    final cat = (state.category ?? '').toLowerCase();
+    final unit = (state.priceEstimate?.unit ?? '').toLowerCase();
+    return cat.contains('crt') || unit.contains('piece');
+  }
+
   void _adjustWeight(double delta) {
     final current = double.tryParse(_weightController.text.trim()) ?? 1.0;
     final updated = current + delta;
@@ -268,6 +288,24 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
     context.read<NewLotBloc>().add(
       NewLotWeightQuantityChanged(
         weightKg: updated,
+        quantity: 1,
+        state: loc.state,
+        city: loc.city,
+      ),
+    );
+  }
+
+  void _adjustQuantity(int delta) {
+    final current = int.tryParse(_weightController.text.trim()) ?? 1;
+    final updated = current + delta;
+    if (updated <= 0) return;
+
+    _weightController.text = updated.toString();
+    final loc = _resolveLocation(context);
+    context.read<NewLotBloc>().add(
+      NewLotWeightQuantityChanged(
+        weightKg: updated.toDouble(),
+        quantity: updated,
         state: loc.state,
         city: loc.city,
       ),
@@ -281,18 +319,34 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
         return l10n.categoryPlastic;
       case 'pcb':
         return l10n.categoryEwaste;
+      case 'crt':
+        return l10n.categoryCrt;
+      case 'lcd_led':
+        return l10n.categoryLcdLed;
+      case 'cable':
+        return l10n.categoryCable;
+      case 'battery':
+        return l10n.categoryBattery;
+      case 'motors':
+        return l10n.categoryMotors;
       case 'metal':
         return l10n.categoryMetal;
       case 'paper':
         return l10n.categoryPaper;
-      case 'battery':
-        return l10n.categoryBattery;
-      case 'cable':
-        return l10n.categoryCable;
       case 'other':
       default:
         return l10n.categoryOther;
     }
+  }
+
+  int _resolveCurrentStep(NewLotState state) {
+    if (state.category == null || state.category!.isEmpty) {
+      return 1;
+    }
+    if (state.priceEstimate == null) {
+      return 2;
+    }
+    return 3;
   }
 
   @override
@@ -302,8 +356,17 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
     return BlocConsumer<NewLotBloc, NewLotState>(
       listenWhen: (previous, current) =>
           previous.status != current.status ||
-          previous.errorMessage != current.errorMessage,
+          previous.errorMessage != current.errorMessage ||
+          previous.category != current.category ||
+          previous.quantity != current.quantity ||
+          previous.weightKg != current.weightKg,
       listener: (context, state) {
+        if (_isPieceBased(state)) {
+          final expected = state.quantity.toString();
+          if (_weightController.text != expected) {
+            _weightController.text = expected;
+          }
+        }
         if (state.status == NewLotStatus.failure &&
             state.errorMessage != null &&
             state.errorType == NewLotErrorType.submission) {
@@ -343,15 +406,18 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
         }
       },
       builder: (context, state) {
+        if (_isPieceBased(state) && _weightController.text.contains('.')) {
+          _weightController.text = state.quantity.toString();
+        }
         return Scaffold(
-          backgroundColor: const Color(0xFFF7F8F5),
+          backgroundColor: AppColors.pageBackground,
           appBar: AppBar(
-            backgroundColor: const Color(0xFFF7F8F5),
+            backgroundColor: AppColors.pageBackground,
             elevation: 0,
             leading: IconButton(
               icon: const Icon(
                 Icons.arrow_back_rounded,
-                color: Color(0xFF191919),
+                color: AppColors.dark900,
               ),
               onPressed: () => Navigator.pop(context),
             ),
@@ -363,7 +429,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF191919),
+                    color: AppColors.dark900,
                   ),
                 ),
                 Text(
@@ -371,7 +437,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: Color(0xFF666666),
+                    color: AppColors.dark500,
                   ),
                 ),
               ],
@@ -382,15 +448,15 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                    horizontal: 10,
+                    vertical: 5,
                   ),
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: AppColors.saffron50,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                      color: AppColors.saffronPrimary.withValues(alpha: 0.35),
                     ),
                   ),
                   child: Row(
@@ -399,7 +465,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                       const Icon(
                         Icons.language,
                         size: 15,
-                        color: Color(0xFF2E7D32),
+                        color: AppColors.saffronDark,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -407,7 +473,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF2E7D32),
+                          color: AppColors.saffronDark,
                         ),
                       ),
                     ],
@@ -426,10 +492,41 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Progress Stepper
+                        AppStepper(
+                          currentStep: _resolveCurrentStep(state),
+                          steps: [
+                            AppStepItem(
+                              number: 1,
+                              title: context.isMarathi
+                                  ? 'सामग्री'
+                                  : context.isEnglish
+                                  ? 'Material'
+                                  : 'सामग्री',
+                            ),
+                            AppStepItem(
+                              number: 2,
+                              title: context.isMarathi
+                                  ? 'प्रमाण'
+                                  : context.isEnglish
+                                  ? 'Quantity'
+                                  : 'मात्रा',
+                            ),
+                            AppStepItem(
+                              number: 3,
+                              title: context.isMarathi
+                                  ? 'पुनरावलोकन'
+                                  : context.isEnglish
+                                  ? 'Review'
+                                  : 'समीक्षा',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
                         _buildPhotoSection(state),
                         const SizedBox(height: 20),
                         _buildClassificationCard(state),
@@ -464,7 +561,14 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(color: AppColors.saffron200),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x08000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
             ),
             clipBehavior: Clip.antiAlias,
             child: Image.file(
@@ -487,14 +591,14 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               icon: const Icon(
                 Icons.refresh_rounded,
                 size: 18,
-                color: Color(0xFF176B45),
+                color: AppColors.saffronPrimary,
               ),
               label: Text(
                 l10n.changePhoto,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF176B45),
+                  color: AppColors.saffronPrimary,
                 ),
               ),
             ),
@@ -509,7 +613,14 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            offset: Offset(0, 1),
+            blurRadius: 3,
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -517,13 +628,13 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
             width: 64,
             height: 64,
             decoration: const BoxDecoration(
-              color: Color(0xFFEAF5EF),
+              color: AppColors.saffron50,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.camera_alt_rounded,
               size: 30,
-              color: Color(0xFF176B45),
+              color: AppColors.saffronPrimary,
             ),
           ),
           const SizedBox(height: 14),
@@ -532,14 +643,14 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF191919),
+              color: AppColors.dark900,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             l10n.takeScrapPhotoSubtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF777777)),
+            style: const TextStyle(fontSize: 13, color: AppColors.dark500),
           ),
           const SizedBox(height: 20),
           Row(
@@ -550,8 +661,11 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   icon: const Icon(Icons.camera_alt_outlined, size: 18),
                   label: Text(l10n.camera),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF176B45),
-                    side: const BorderSide(color: Color(0xFF176B45)),
+                    foregroundColor: AppColors.saffronPrimary,
+                    side: const BorderSide(
+                      color: AppColors.saffronPrimary,
+                      width: 1.5,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -566,8 +680,8 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   icon: const Icon(Icons.photo_library_outlined, size: 18),
                   label: Text(l10n.gallery),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF374151),
-                    side: const BorderSide(color: Color(0xFFD1D5DB)),
+                    foregroundColor: AppColors.dark900,
+                    side: const BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -593,9 +707,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0FDF4),
+          color: AppColors.saffron50,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFBBF7D0)),
+          border: Border.all(color: AppColors.saffron200),
         ),
         child: Row(
           children: [
@@ -604,7 +718,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               height: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: Color(0xFF176B45),
+                color: AppColors.saffronPrimary,
               ),
             ),
             const SizedBox(width: 14),
@@ -617,7 +731,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF176B45),
+                      color: AppColors.saffronDark,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -627,7 +741,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                         : 'कबाड़ की सामग्री विश्लेषित की जा रही है',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF15803D),
+                      color: AppColors.saffronDark,
                     ),
                   ),
                 ],
@@ -640,6 +754,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
 
     if (state.status == NewLotStatus.failure &&
         state.errorType == NewLotErrorType.classification) {
+      final canRetry = state.imagePath != null && state.imagePath!.isNotEmpty;
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -649,99 +764,149 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFFDE68A)),
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
-              Icons.info_outline_rounded,
-              color: Color(0xFFD97706),
-              size: 24,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.amberPrimary,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.aiFailed,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFB45309),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        context.isMarathi
+                            ? 'तुम्ही खाली स्क्रॅपचा प्रकार स्वतः निवडू शकता किंवा पुन्हा स्कॅन करू शकता.'
+                            : 'आप नीचे कबाड़ का प्रकार खुद चुन सकते हैं या दोबारा स्कैन कर सकते हैं।',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF78350F),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.aiFailed,
-                    style: const TextStyle(
+            if (canRetry) ...[
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  key: const Key('retry_ai_scan_button'),
+                  onPressed: () {
+                    final loc = _resolveLocation(context);
+                    context.read<NewLotBloc>().add(
+                      NewLotImageSelected(
+                        state.imagePath!,
+                        state: loc.state,
+                        city: loc.city,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                  label: Text(l10n.retryAiScan),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.saffronPrimary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(48),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    textStyle: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFFB45309),
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    context.isMarathi
-                        ? 'तुम्ही खाली स्क्रॅपचा प्रकार स्वतः निवडू शकता.'
-                        : 'आप नीचे कबाड़ का प्रकार खुद चुन सकते हैं।',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF78350F),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
       );
     }
 
-    if (state.classification != null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFFEAF5EF),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFB9DCC9)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: const BoxDecoration(
-                color: Color(0x26176B45),
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-              child: const Icon(
-                Icons.auto_awesome,
-                color: Color(0xFF176B45),
-                size: 24,
-              ),
+    if (state.category == null) return const SizedBox.shrink();
+
+    final isAi = state.classification != null && !state.isManualCategory;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: AppColors.saffron50,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.saffron200, width: 1.5),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            offset: Offset(0, 1),
+            blurRadius: 3,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppColors.saffronPrimary.withValues(alpha: 0.15),
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.aiIdentified,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF176B45),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    state.category ?? state.classification!.category,
-                    style: const TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF191919),
-                    ),
-                  ),
-                ],
-              ),
+            child: Icon(
+              isAi ? Icons.auto_awesome : Icons.check_circle_outline_rounded,
+              color: AppColors.saffronPrimary,
+              size: 24,
             ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isAi ? l10n.aiIdentified : l10n.selectedCategoryLabel,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.saffronDark,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  state.category ?? state.classification?.category ?? '',
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.dark900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isAi && state.classification != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFF176B45),
+                color: AppColors.saffronPrimary,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -753,12 +918,9 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 ),
               ),
             ),
-          ],
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
+        ],
+      ),
+    );
   }
 
   Widget _buildCategorySelector(NewLotState state) {
@@ -772,7 +934,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF191919),
+            color: AppColors.dark900,
           ),
         ),
         const SizedBox(height: 10),
@@ -785,18 +947,40 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 state.category != null &&
                 (state.category!.toLowerCase() == cat.value.toLowerCase() ||
                     state.category!.toLowerCase() ==
+                        cat.labelKey.toLowerCase() ||
+                    (cat.value == 'LCD_LED' &&
+                        state.category!.toLowerCase().contains('lcd')) ||
+                    (cat.value == 'E-Waste' &&
+                        (state.category!.toLowerCase().contains('pcb') ||
+                            state.category!.toLowerCase().contains('ewaste') ||
+                            state.category!.toLowerCase().contains(
+                              'e-waste',
+                            ))) ||
+                    state.category!.toLowerCase() ==
                         categoryDisplay.toLowerCase());
 
             return InkWell(
               onTap: () {
                 final loc = _resolveLocation(context);
-                context.read<NewLotBloc>().add(
-                  NewLotCategoryChanged(
-                    category: cat.value,
-                    state: loc.state,
-                    city: loc.city,
-                  ),
-                );
+                if (isSelected) {
+                  context.read<NewLotBloc>().add(
+                    NewLotCategoryChanged(
+                      category: null,
+                      isManual: false,
+                      state: loc.state,
+                      city: loc.city,
+                    ),
+                  );
+                } else {
+                  context.read<NewLotBloc>().add(
+                    NewLotCategoryChanged(
+                      category: cat.value,
+                      isManual: true,
+                      state: loc.state,
+                      city: loc.city,
+                    ),
+                  );
+                }
               },
               borderRadius: BorderRadius.circular(14),
               child: Container(
@@ -805,14 +989,25 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF176B45) : Colors.white,
+                  color: isSelected ? AppColors.saffronPrimary : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF176B45)
-                        : const Color(0xFFE5E7EB),
+                        ? AppColors.saffronPrimary
+                        : AppColors.border,
                     width: isSelected ? 1.5 : 1,
                   ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.saffronPrimary.withValues(
+                              alpha: 0.25,
+                            ),
+                            offset: const Offset(0, 2),
+                            blurRadius: 4,
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -820,9 +1015,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                     Icon(
                       cat.icon,
                       size: 18,
-                      color: isSelected
-                          ? Colors.white
-                          : const Color(0xFF555555),
+                      color: isSelected ? Colors.white : AppColors.dark500,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -832,9 +1025,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                         fontWeight: isSelected
                             ? FontWeight.w700
                             : FontWeight.w500,
-                        color: isSelected
-                            ? Colors.white
-                            : const Color(0xFF191919),
+                        color: isSelected ? Colors.white : AppColors.dark900,
                       ),
                     ),
                   ],
@@ -849,6 +1040,8 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
 
   Widget _buildWeightSection(NewLotState state) {
     final l10n = context.l10n;
+    final isPiece = _isPieceBased(state);
+    final unitLabel = isPiece ? l10n.pieceUnit : 'KG';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -858,7 +1051,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF191919),
+            color: AppColors.dark900,
           ),
         ),
         const SizedBox(height: 10),
@@ -867,19 +1060,26 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x06000000),
+                offset: Offset(0, 1),
+                blurRadius: 3,
+              ),
+            ],
           ),
           child: Column(
             children: [
               TextField(
                 controller: _weightController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+                keyboardType: isPiece
+                    ? TextInputType.number
+                    : const TextInputType.numberWithOptions(decimal: true),
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF191919),
+                  color: AppColors.dark900,
                 ),
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(
@@ -890,16 +1090,16 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   fillColor: const Color(0xFFF9FAFB),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: const BorderSide(
-                      color: Color(0xFF176B45),
+                      color: AppColors.saffronPrimary,
                       width: 1.5,
                     ),
                   ),
@@ -908,27 +1108,42 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                       horizontal: 14,
                       vertical: 12,
                     ),
-                    child: const Text(
-                      'KG',
-                      style: TextStyle(
+                    child: Text(
+                      unitLabel,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF176B45),
+                        color: AppColors.saffronPrimary,
                       ),
                     ),
                   ),
                 ),
                 onChanged: (val) {
-                  final weight = double.tryParse(val.trim());
-                  if (weight != null && weight > 0) {
-                    final loc = _resolveLocation(context);
-                    context.read<NewLotBloc>().add(
-                      NewLotWeightQuantityChanged(
-                        weightKg: weight,
-                        state: loc.state,
-                        city: loc.city,
-                      ),
-                    );
+                  final loc = _resolveLocation(context);
+                  if (isPiece) {
+                    final qty = int.tryParse(val.trim());
+                    if (qty != null && qty > 0) {
+                      context.read<NewLotBloc>().add(
+                        NewLotWeightQuantityChanged(
+                          weightKg: qty.toDouble(),
+                          quantity: qty,
+                          state: loc.state,
+                          city: loc.city,
+                        ),
+                      );
+                    }
+                  } else {
+                    final weight = double.tryParse(val.trim());
+                    if (weight != null && weight > 0) {
+                      context.read<NewLotBloc>().add(
+                        NewLotWeightQuantityChanged(
+                          weightKg: weight,
+                          quantity: 1,
+                          state: loc.state,
+                          city: loc.city,
+                        ),
+                      );
+                    }
                   }
                 },
               ),
@@ -936,15 +1151,49 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: [
-                    _buildQuickWeightButton('- 1 KG', () => _adjustWeight(-1)),
-                    const SizedBox(width: 8),
-                    _buildQuickWeightButton('+ 1 KG', () => _adjustWeight(1)),
-                    const SizedBox(width: 8),
-                    _buildQuickWeightButton('+ 5 KG', () => _adjustWeight(5)),
-                    const SizedBox(width: 8),
-                    _buildQuickWeightButton('+ 10 KG', () => _adjustWeight(10)),
-                  ],
+                  children: isPiece
+                      ? [
+                          _buildQuickWeightButton(
+                            '- 1 Piece',
+                            () => _adjustQuantity(-1),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildQuickWeightButton(
+                            '+ 1 Piece',
+                            () => _adjustQuantity(1),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildQuickWeightButton(
+                            '+ 2 Pieces',
+                            () => _adjustQuantity(2),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildQuickWeightButton(
+                            '+ 5 Pieces',
+                            () => _adjustQuantity(5),
+                          ),
+                        ]
+                      : [
+                          _buildQuickWeightButton(
+                            '- 1 KG',
+                            () => _adjustWeight(-1),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildQuickWeightButton(
+                            '+ 1 KG',
+                            () => _adjustWeight(1),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildQuickWeightButton(
+                            '+ 5 KG',
+                            () => _adjustWeight(5),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildQuickWeightButton(
+                            '+ 10 KG',
+                            () => _adjustWeight(10),
+                          ),
+                        ],
                 ),
               ),
             ],
@@ -963,14 +1212,14 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
         decoration: BoxDecoration(
           color: const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: AppColors.border),
         ),
         child: Text(
           label,
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF374151),
+            color: AppColors.dark900,
           ),
         ),
       ),
@@ -986,11 +1235,19 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: hasPrice ? const Color(0xFFEAF5EF) : Colors.white,
+        color: hasPrice ? AppColors.saffron50 : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: hasPrice ? const Color(0xFFB9DCC9) : const Color(0xFFE5E7EB),
+          color: hasPrice ? AppColors.saffron200 : AppColors.border,
+          width: hasPrice ? 1.5 : 1,
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            offset: Offset(0, 1),
+            blurRadius: 3,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1003,23 +1260,25 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF191919),
+                  color: AppColors.dark900,
                 ),
               ),
               if (hasPrice && state.priceEstimate!.recommendedRateInr > 0) ...[
                 Builder(
                   builder: (context) {
+                    final isPiece = _isPieceBased(state);
                     final unit = state.priceEstimate!.unit;
-                    final unitLabel = unit.toLowerCase().contains('piece')
-                        ? 'Piece'
+                    final unitLabel =
+                        (isPiece || unit.toLowerCase().contains('piece'))
+                        ? l10n.pieceUnit
                         : 'KG';
                     return Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
+                        horizontal: 10,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF176B45),
+                        color: AppColors.saffronPrimary,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -1045,7 +1304,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Color(0xFF176B45),
+                    color: AppColors.saffronPrimary,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1055,7 +1314,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                       : 'कीमत का अनुमान लगाया जा रहा है...',
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF555555),
+                    color: AppColors.dark500,
                   ),
                 ),
               ],
@@ -1068,7 +1327,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   style: const TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF176B45),
+                    color: AppColors.saffronPrimary,
                   ),
                 ),
                 const Spacer(),
@@ -1086,7 +1345,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF555555),
+                  color: AppColors.dark500,
                 ),
               ),
             ],
@@ -1096,7 +1355,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                 const Icon(
                   Icons.info_outline_rounded,
                   size: 20,
-                  color: Color(0xFF888888),
+                  color: AppColors.dark400,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -1106,7 +1365,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF777777),
+                    color: AppColors.dark500,
                   ),
                 ),
               ],
@@ -1121,8 +1380,36 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
     final isSubmitting = state.status == NewLotStatus.submitting;
     final hasImage = state.imagePath != null && state.imagePath!.isNotEmpty;
     final hasCategory = state.category != null && state.category!.isNotEmpty;
-    final hasValidWeight = state.weightKg > 0;
-    final isFormValid = hasImage && hasCategory && hasValidWeight;
+    final isPiece = _isPieceBased(state);
+    final hasValidQuantity = isPiece
+        ? state.quantity >= 1
+        : state.weightKg >= 0.1;
+    final isFormValid = hasCategory && hasValidQuantity;
+    final finalEnabled = isFormValid && !isSubmitting;
+    final loc = _resolveLocation(context);
+
+    debugPrint(
+      'NEW LOT CTA DEBUG: '
+      'status=${state.status}, '
+      'category=${state.category}, '
+      'quantity=${state.quantity}, '
+      'weightKg=${state.weightKg}, '
+      'priceEstimate=${state.priceEstimate}, '
+      'state=${loc.state}, '
+      'city=${loc.city}, '
+      'imagePath=${state.imagePath}',
+    );
+
+    debugPrint(
+      'CTA CONDITIONS: '
+      'categoryValid=$hasCategory, '
+      'quantityValid=$hasValidQuantity, '
+      'locationValid=true, '
+      'priceValid=${state.priceEstimate != null}, '
+      'imageValid=$hasImage, '
+      'isSubmitting=$isSubmitting, '
+      'finalEnabled=$finalEnabled',
+    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -1142,7 +1429,7 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
           width: double.infinity,
           height: 54,
           child: ElevatedButton.icon(
-            onPressed: (isFormValid && !isSubmitting)
+            onPressed: finalEnabled
                 ? () {
                     ConnectivityService? connectivity;
                     try {
@@ -1159,7 +1446,6 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
                       return;
                     }
 
-                    final loc = _resolveLocation(context);
                     context.read<NewLotBloc>().add(
                       NewLotSubmitted(
                         location: loc,
@@ -1186,11 +1472,12 @@ class _NewScrapLotViewState extends State<_NewScrapLotView> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF176B45),
+              backgroundColor: AppColors.saffronPrimary,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(0xFFE5E7EB),
               disabledForegroundColor: const Color(0xFF9CA3AF),
-              elevation: 0,
+              elevation: 1,
+              shadowColor: AppColors.saffronPrimary.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),

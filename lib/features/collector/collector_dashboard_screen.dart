@@ -6,6 +6,9 @@ import '../../core/bloc/accessibility/accessibility_event.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/read_cache_storage.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_card.dart';
+import '../../core/widgets/app_stat_card.dart';
 import '../../core/widgets/language_audio_sheet.dart';
 import '../../core/widgets/offline_stale_banner.dart';
 import '../../domain/entities/lot_entity.dart';
@@ -163,7 +166,9 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
   }
 
   List<_ScrapRate> _resolveRates(
-      BuildContext context, List<MaterialEntity> liveRates) {
+    BuildContext context,
+    List<MaterialEntity> liveRates,
+  ) {
     final l10n = context.l10n;
     if (liveRates.isEmpty) {
       if (context.isMarathi) {
@@ -250,7 +255,9 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
     }
     return liveRates.map((m) {
       final name = _getCategoryLocalized(
-          context, m.name.isNotEmpty ? m.name : m.category);
+        context,
+        m.name.isNotEmpty ? m.name : m.category,
+      );
       final price = _getBenchmarkRate(m.category, m.name);
       final icon = _getCategoryIcon(m.category);
       return _ScrapRate(
@@ -265,7 +272,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pageBackground,
       body: SafeArea(
         child: BlocBuilder<CollectorLotsBloc, CollectorLotsState>(
           builder: (context, state) {
@@ -289,7 +296,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
             final resolvedRates = _resolveRates(context, liveRates);
 
             return RefreshIndicator(
-              color: const Color(0xFF147A65),
+              color: AppColors.saffronPrimary,
               onRefresh: () async {
                 context.read<CollectorLotsBloc>().add(
                   const CollectorDashboardInitRequested(),
@@ -305,9 +312,11 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
                     _buildHeader(
                       context,
                       recentLots,
-                      isOffline: state is CollectorDashboardLoaded && state.isOffline,
+                      isOffline:
+                          state is CollectorDashboardLoaded && state.isOffline,
                     ),
-                    if (state is CollectorDashboardLoaded && state.isOffline) ...[
+                    if (state is CollectorDashboardLoaded &&
+                        state.isOffline) ...[
                       const SizedBox(height: 12),
                       OfflineStaleBanner(
                         cachedAt: state.cachedAt,
@@ -317,13 +326,15 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 20),
+                    _buildStatsRow(context, recentLots),
                     const SizedBox(height: 24),
                     _buildRecentLotsSection(context, recentLots),
-                    const SizedBox(height: 28),
-                    _buildLiveRatesSection(context, resolvedRates),
                     const SizedBox(height: 24),
+                    _buildLiveRatesSection(context, resolvedRates),
+                    const SizedBox(height: 28),
                     _buildBottomActions(context),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -347,15 +358,16 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
           _BackButton(onPressed: () => Navigator.pop(context))
         else
           Container(
-            width: 42,
-            height: 42,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE2F2EB),
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.saffron50,
               shape: BoxShape.circle,
+              border: Border.all(color: AppColors.saffron200, width: 1.5),
             ),
             child: const Icon(
-              Icons.person_outline_rounded,
-              color: Color(0xFF147A65),
+              Icons.person_rounded,
+              color: AppColors.saffronPrimary,
               size: 24,
             ),
           ),
@@ -369,13 +381,14 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF191919),
+                  color: AppColors.dark900,
+                  letterSpacing: -0.3,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 l10n.dashboardSubtitle,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF777777)),
+                style: const TextStyle(fontSize: 12, color: AppColors.dark500),
               ),
             ],
           ),
@@ -385,25 +398,29 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
           onTap: () => LanguageAudioSheet.show(context),
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
+              color: AppColors.saffron50,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                color: AppColors.saffronPrimary.withValues(alpha: 0.35),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.language, size: 16, color: Color(0xFF2E7D32)),
+                const Icon(
+                  Icons.language,
+                  size: 15,
+                  color: AppColors.saffronDark,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   context.currentLanguage.nativeLabel,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
+                    color: AppColors.saffronDark,
                   ),
                 ),
               ],
@@ -418,7 +435,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
           tooltip: l10n.myRecentLots,
           icon: const Icon(
             Icons.inventory_2_outlined,
-            color: Color(0xFF147A65),
+            color: AppColors.saffronPrimary,
             size: 22,
           ),
         ),
@@ -429,29 +446,115 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
           tooltip: l10n.myEarningsAndTransactions,
           icon: const Icon(
             Icons.account_balance_wallet_outlined,
-            color: Color(0xFF147A65),
+            color: AppColors.saffronPrimary,
             size: 22,
           ),
         ),
         IconButton(
           onPressed: () {
-            final offlinePrefix = isOffline ? '${l10n.offlineStaleNotice}। ' : '';
+            final offlinePrefix = isOffline
+                ? '${l10n.offlineStaleNotice}। '
+                : '';
             final speechText =
                 '$offlinePrefix${l10n.welcomeGreeting}. ${l10n.todayRatesTitle}. ${recentLots.length} ${l10n.myRecentLots}.';
             try {
               context.read<AccessibilityBloc>().add(
-                    AccessibilitySpeakRequested(speechText, force: true),
-                  );
+                AccessibilitySpeakRequested(speechText, force: true),
+              );
             } catch (_) {}
           },
           tooltip: l10n.audioTooltip,
           icon: const Icon(
-            Icons.volume_up_outlined,
-            color: Color(0xFF147A65),
+            Icons.volume_up_rounded,
+            color: AppColors.saffronPrimary,
             size: 23,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildStatsRow(BuildContext context, List<LotEntity> recentLots) {
+    final totalLotsCount = recentLots.length;
+    final pickedUpCount = recentLots
+        .where(
+          (l) =>
+              l.status == LotStatus.picked || l.status == LotStatus.completed,
+        )
+        .length;
+    final activeCount = recentLots
+        .where(
+          (l) =>
+              l.status == LotStatus.pending || l.status == LotStatus.accepted,
+        )
+        .length;
+    final totalValue = recentLots.fold<double>(
+      0,
+      (sum, l) => sum + (l.finalPrice ?? l.estimatedPrice),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            SizedBox(
+              width: cardWidth,
+              child: AppStatCard(
+                label: context.isMarathi
+                    ? 'एकूण लॉट्स'
+                    : context.isEnglish
+                    ? 'Total Lots'
+                    : 'कुल लॉट',
+                value: '$totalLotsCount',
+                icon: Icons.inventory_2_outlined,
+                accent: AppStatAccent.saffron,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: AppStatCard(
+                label: context.isMarathi
+                    ? 'उचललेले लॉट'
+                    : context.isEnglish
+                    ? 'Picked Up'
+                    : 'उठाव पूर्ण',
+                value: '$pickedUpCount',
+                icon: Icons.check_circle_outline_rounded,
+                accent: AppStatAccent.green,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: AppStatCard(
+                label: context.isMarathi
+                    ? 'सक्रिय लॉट'
+                    : context.isEnglish
+                    ? 'Active'
+                    : 'सक्रिय लॉट',
+                value: '$activeCount',
+                icon: Icons.schedule_rounded,
+                accent: AppStatAccent.amber,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: AppStatCard(
+                label: context.isMarathi
+                    ? 'एकूण मूल्य'
+                    : context.isEnglish
+                    ? 'Total Value'
+                    : 'कुल मूल्य',
+                value: '₹${totalValue.toStringAsFixed(0)}',
+                icon: Icons.trending_up_rounded,
+                accent: AppStatAccent.blue,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -472,7 +575,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF191919),
+                color: AppColors.dark900,
               ),
             ),
             TextButton.icon(
@@ -482,12 +585,12 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
               icon: const Icon(
                 Icons.arrow_forward_rounded,
                 size: 16,
-                color: Color(0xFF147A65),
+                color: AppColors.saffronPrimary,
               ),
               label: Text(
                 l10n.viewAll,
                 style: const TextStyle(
-                  color: Color(0xFF147A65),
+                  color: AppColors.saffronPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
@@ -515,48 +618,56 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
   Widget _buildEmptyRecentLotsCard(BuildContext context) {
     final l10n = context.l10n;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          const Icon(
-            Icons.inventory_2_outlined,
-            size: 38,
-            color: Color(0xFF9CA3AF),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: AppColors.saffron50,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              size: 28,
+              color: AppColors.saffronPrimary,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             l10n.noScrapLots,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF374151),
+              color: AppColors.dark900,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             l10n.noScrapLotsSubtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.dark500,
+              height: 1.4,
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
               Navigator.pushNamed(context, '/new-lot');
             },
-            icon: const Icon(Icons.add, size: 18),
+            icon: const Icon(Icons.add_rounded, size: 18),
             label: Text(l10n.addFirstLotAction),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF147A65),
+              backgroundColor: AppColors.saffronPrimary,
               foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
@@ -587,13 +698,20 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
           arguments: {'lotId': lot.id, 'lot': lot},
         );
       },
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F8F5),
-          border: Border.all(color: const Color(0xFFE1E1DC)),
-          borderRadius: BorderRadius.circular(14),
+          color: Colors.white,
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x08000000),
+              offset: Offset(0, 1),
+              blurRadius: 3,
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -601,12 +719,13 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFFE2F2EB),
-                borderRadius: BorderRadius.circular(10),
+                color: AppColors.saffron50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.saffron200),
               ),
               child: Icon(
                 _getCategoryIcon(rawCategory),
-                color: const Color(0xFF147A65),
+                color: AppColors.saffronPrimary,
                 size: 22,
               ),
             ),
@@ -623,7 +742,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF191919),
+                            color: AppColors.dark900,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -640,7 +759,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF555555),
+                          color: AppColors.dark700,
                         ),
                       ),
                       if (priceText != null) ...[
@@ -653,7 +772,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF147A65),
+                            color: AppColors.greenPrimary,
                           ),
                         ),
                       ],
@@ -665,7 +784,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
             const SizedBox(width: 8),
             const Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.dark400,
               size: 20,
             ),
           ],
@@ -754,7 +873,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
           children: [
             const Icon(
               Icons.trending_up_rounded,
-              color: Color(0xFF147A65),
+              color: AppColors.saffronPrimary,
               size: 22,
             ),
             const SizedBox(width: 8),
@@ -763,20 +882,21 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF191919),
+                color: AppColors.dark900,
               ),
             ),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFFE2F2EB),
+                color: AppColors.saffron50,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.saffron200),
               ),
               child: Text(
                 l10n.liveStatus,
                 style: const TextStyle(
-                  color: Color(0xFF147A65),
+                  color: AppColors.saffronDark,
                   fontWeight: FontWeight.w700,
                   fontSize: 11,
                 ),
@@ -812,8 +932,8 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
               Navigator.pushNamed(context, '/collector-transactions');
             },
             icon: const Icon(
-              Icons.receipt_long_outlined,
-              color: Color(0xFF147A65),
+              Icons.account_balance_wallet_outlined,
+              color: AppColors.saffronPrimary,
               size: 20,
             ),
             label: Text(
@@ -821,14 +941,18 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF147A65),
+                color: AppColors.saffronPrimary,
               ),
             ),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF147A65), width: 1.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(13),
+              side: const BorderSide(
+                color: AppColors.saffronPrimary,
+                width: 1.5,
               ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              backgroundColor: Colors.white,
             ),
           ),
         ),
@@ -849,11 +973,12 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF147A65),
+              backgroundColor: AppColors.saffronPrimary,
               foregroundColor: Colors.white,
-              elevation: 0,
+              elevation: 1,
+              shadowColor: AppColors.saffronPrimary.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(13),
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
           ),
@@ -868,11 +993,11 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: Color(0xFF147A65)),
+          const CircularProgressIndicator(color: AppColors.saffronPrimary),
           const SizedBox(height: 16),
           Text(
             l10n.collectorDashboardLoading,
-            style: const TextStyle(fontSize: 16, color: Color(0xFF555555)),
+            style: const TextStyle(fontSize: 16, color: AppColors.dark500),
           ),
         ],
       ),
@@ -901,7 +1026,7 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
+              style: const TextStyle(color: AppColors.dark500),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -913,10 +1038,10 @@ class _CollectorDashboardViewState extends State<_CollectorDashboardView> {
               icon: const Icon(Icons.refresh_rounded),
               label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147A65),
+                backgroundColor: AppColors.saffronPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -938,20 +1063,28 @@ class _RateCard extends StatelessWidget {
       height: 68,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F5),
-        border: Border.all(color: const Color(0xFFE1E1DC)),
+        color: Colors.white,
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            offset: Offset(0, 1),
+            blurRadius: 2,
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             width: 42,
             height: 42,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE2F2EB),
+            decoration: BoxDecoration(
+              color: AppColors.saffron50,
               shape: BoxShape.circle,
+              border: Border.all(color: AppColors.saffron200),
             ),
-            child: Icon(rate.icon, size: 21, color: const Color(0xFF147A65)),
+            child: Icon(rate.icon, size: 21, color: AppColors.saffronPrimary),
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -964,7 +1097,7 @@ class _RateCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF222222),
+                    color: AppColors.dark900,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -972,7 +1105,7 @@ class _RateCard extends StatelessWidget {
                   rate.subtitle,
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF888888),
+                    color: AppColors.dark500,
                   ),
                 ),
               ],
@@ -983,13 +1116,13 @@ class _RateCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF222222),
+              color: AppColors.dark900,
             ),
           ),
           const SizedBox(width: 6),
           const Text(
             '/kg',
-            style: TextStyle(fontSize: 11, color: Color(0xFF888888)),
+            style: TextStyle(fontSize: 11, color: AppColors.dark400),
           ),
         ],
       ),
@@ -1011,7 +1144,7 @@ class _BackButton extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFF222222), width: 1.5),
+          border: Border.all(color: AppColors.dark900, width: 1.5),
           shape: BoxShape.circle,
         ),
         child: const Icon(Icons.arrow_back_rounded, size: 22),

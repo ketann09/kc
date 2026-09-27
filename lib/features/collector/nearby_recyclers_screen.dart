@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/connectivity_service.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/language_audio_sheet.dart';
 import '../../core/widgets/offline_blocked_sheet.dart';
 import '../../core/widgets/speaker_button.dart';
@@ -85,36 +86,51 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
     final hasValidLotId = widget.lotId != null && widget.lotId!.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        title: Text(l10n.nearbyRecyclers),
+        title: Text(
+          l10n.nearbyRecyclers,
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            color: AppColors.dark900,
+          ),
+        ),
+        backgroundColor: AppColors.pageBackground,
+        elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.dark900),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         actions: [
           InkWell(
             onTap: () => LanguageAudioSheet.show(context),
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: AppColors.saffron50,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+                  color: AppColors.saffronPrimary.withValues(alpha: 0.35),
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.language,
-                      size: 15, color: Color(0xFF2E7D32)),
+                  const Icon(
+                    Icons.language,
+                    size: 15,
+                    color: AppColors.saffronDark,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     context.currentLanguage.nativeLabel,
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
+                      color: AppColors.saffronDark,
                     ),
                   ),
                 ],
@@ -165,7 +181,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               ),
               child: const Icon(
                 Icons.warning_amber_rounded,
-                color: Color(0xFFDC2626),
+                color: AppColors.redPrimary,
                 size: 48,
               ),
             ),
@@ -174,12 +190,12 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               context.isMarathi
                   ? 'लॉट आयडी आढळला नाही'
                   : (context.isEnglish
-                      ? 'Lot ID Not Found'
-                      : 'लॉट आईडी नहीं मिली'),
+                        ? 'Lot ID Not Found'
+                        : 'लॉट आईडी नहीं मिली'),
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF191919),
+                color: AppColors.dark900,
               ),
             ),
             const SizedBox(height: 8),
@@ -187,17 +203,18 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               context.isMarathi
                   ? 'रीसायकलर शोधण्यासाठी लॉट आयडी आवश्यक आहे. कृपया आधी लॉट तयार करा.'
                   : (context.isEnglish
-                      ? 'Lot ID is required to search recyclers. Please create a lot first.'
-                      : 'रीसाइक्लर खोजने के लिए लॉट आईडी आवश्यक है। कृपया पहले लॉट बनाएं।'),
+                        ? 'Lot ID is required to search recyclers. Please create a lot first.'
+                        : 'रीसाइक्लर खोजने के लिए लॉट आईडी आवश्यक है। कृपया पहले लॉट बनाएं।'),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: AppColors.dark500),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => Navigator.of(context).maybePop(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF176B45),
+                backgroundColor: AppColors.saffronPrimary,
                 foregroundColor: Colors.white,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -221,14 +238,16 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const CircularProgressIndicator(
-              color: Color(0xFF176B45), strokeWidth: 3),
+            color: AppColors.saffronPrimary,
+            strokeWidth: 3,
+          ),
           const SizedBox(height: 20),
           Text(
             l10n.searchingRecyclers,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF191919),
+              color: AppColors.dark900,
             ),
           ),
           const SizedBox(height: 8),
@@ -237,7 +256,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                 ? 'तुमच्या लॉटसाठी जवळचे रीसायकलर्स शोधले जात आहेत'
                 : 'आपके लॉट के लिए निकटतम और सबसे अच्छे रीसाइक्लर ढूंढे जा रहे हैं',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+            style: const TextStyle(fontSize: 14, color: AppColors.dark500),
           ),
         ],
       ),
@@ -260,7 +279,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               ),
               child: const Icon(
                 Icons.error_outline_rounded,
-                color: Color(0xFFDC2626),
+                color: AppColors.redPrimary,
                 size: 48,
               ),
             ),
@@ -270,14 +289,14 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF191919),
+                color: AppColors.dark900,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: AppColors.dark500),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -291,7 +310,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               icon: const Icon(Icons.refresh),
               label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF176B45),
+                backgroundColor: AppColors.saffronPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -319,12 +338,12 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                color: Color(0xFFEAF5EF),
+                color: AppColors.saffron50,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.location_off_outlined,
-                color: Color(0xFF176B45),
+                color: AppColors.saffronPrimary,
                 size: 48,
               ),
             ),
@@ -334,7 +353,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF191919),
+                color: AppColors.dark900,
               ),
             ),
             const SizedBox(height: 8),
@@ -343,7 +362,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                   ? 'तुमच्या परिसरात सध्या कोणताही रीसायकलर उपलब्ध नाही. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा.'
                   : 'आपके क्षेत्र में फिलहाल कोई सक्रिय रीसाइक्लर उपलब्ध नहीं है। कृपया कुछ समय बाद पुनः प्रयास करें।',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 14, color: AppColors.dark500),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -357,7 +376,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               icon: const Icon(Icons.refresh),
               label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF176B45),
+                backgroundColor: AppColors.saffronPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -387,24 +406,25 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
       children: [
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
               Text(
                 l10n.nearbyRecyclers,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF191919),
+                  color: AppColors.dark900,
+                  letterSpacing: -0.4,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 context.isMarathi
                     ? '${matches.length} रीसायकलर्स तुमच्या स्क्रॅपसाठी उपलब्ध आहेत'
                     : '${matches.length} रीसाइक्लर आपके कबाड़ के लिए उपलब्ध हैं',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                style: const TextStyle(fontSize: 14, color: AppColors.dark500),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               ...matches.map((recycler) {
                 final isSelected = selected?.recyclerId == recycler.recyclerId;
                 final isBestMatch =
@@ -454,17 +474,15 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF176B45)
-                : (isBestMatch
-                      ? const Color(0xFFB9DCC9)
-                      : const Color(0xFFE5E7EB)),
+                ? AppColors.saffronPrimary
+                : (isBestMatch ? AppColors.saffron200 : AppColors.borderMedium),
             width: isSelected ? 2.0 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? const Color(0x18176B45)
-                  : const Color(0x0A000000),
+                  ? AppColors.saffronPrimary.withValues(alpha: 0.12)
+                  : const Color(0x08000000),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -481,15 +499,20 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                   height: 46,
                   decoration: BoxDecoration(
                     color: isBestMatch || isSelected
-                        ? const Color(0xFFEAF5EF)
+                        ? AppColors.saffron50
                         : const Color(0xFFF3F4F6),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isBestMatch || isSelected
+                          ? AppColors.saffron200
+                          : AppColors.border,
+                    ),
                   ),
                   child: Icon(
-                    Icons.recycling,
+                    Icons.recycling_rounded,
                     color: isBestMatch || isSelected
-                        ? const Color(0xFF176B45)
-                        : Colors.grey.shade600,
+                        ? AppColors.saffronPrimary
+                        : AppColors.dark500,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -502,7 +525,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                         style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF191919),
+                          color: AppColors.dark900,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -510,9 +533,9 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                           recycler.address!.trim().isNotEmpty) ...[
                         Text(
                           recycler.address!.trim(),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade700,
+                            color: AppColors.dark500,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -521,19 +544,21 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                       ],
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.location_on_outlined,
                             size: 14,
-                            color: Colors.grey.shade600,
+                            color: AppColors.dark400,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             recycler.distance > 0
                                 ? '${recycler.distance.toStringAsFixed(1)} ${context.isMarathi ? 'किमी लांब' : 'किमी दूर'}'
-                                : (context.isMarathi ? 'जवळ स्थित' : 'पास में स्थित'),
-                            style: TextStyle(
+                                : (context.isMarathi
+                                      ? 'जवळ स्थित'
+                                      : 'पास में स्थित'),
+                            style: const TextStyle(
                               fontSize: 13,
-                              color: Colors.grey.shade700,
+                              color: AppColors.dark500,
                             ),
                           ),
                         ],
@@ -547,20 +572,20 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                     if (isBestMatch)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                          horizontal: 9,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEAF5EF),
+                          color: AppColors.saffron50,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFB9DCC9)),
+                          border: Border.all(color: AppColors.saffron200),
                         ),
                         child: Text(
                           l10n.bestMatch,
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF176B45),
+                            color: AppColors.saffronDark,
                           ),
                         ),
                       )
@@ -578,10 +603,10 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                           l10n.matchPercentageLabel(
                             (recycler.score * 100).round(),
                           ),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
+                            color: AppColors.dark500,
                           ),
                         ),
                       ),
@@ -594,7 +619,8 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -606,7 +632,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                         l10n.proposedRate,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6B7280),
+                          color: AppColors.dark500,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -617,7 +643,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF191919),
+                          color: AppColors.dark900,
                         ),
                       ),
                     ],
@@ -629,7 +655,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                         l10n.estimatedOffer,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6B7280),
+                          color: AppColors.dark500,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -638,7 +664,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF176B45),
+                          color: AppColors.greenPrimary,
                         ),
                       ),
                     ],
@@ -649,28 +675,29 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
+              height: 46,
               child: isSelected
                   ? OutlinedButton.icon(
                       onPressed: () {},
                       icon: const Icon(
                         Icons.check_circle,
                         size: 18,
-                        color: Color(0xFF176B45),
+                        color: AppColors.saffronPrimary,
                       ),
                       label: Text(
                         l10n.selected,
                         style: const TextStyle(
-                          color: Color(0xFF176B45),
+                          color: AppColors.saffronPrimary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(
-                          color: Color(0xFF176B45),
+                          color: AppColors.saffronPrimary,
                           width: 1.5,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     )
@@ -681,10 +708,11 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF176B45),
+                        backgroundColor: AppColors.saffronPrimary,
                         foregroundColor: Colors.white,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text(l10n.selectRecycler),
@@ -717,7 +745,11 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           l10n.confirmRecycler,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: AppColors.dark900,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -727,27 +759,31 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               context.isMarathi
                   ? 'तुम्ही $recyclerName कडे हा लॉट सोपवण्याची विनंती पाठवू इच्छिता का?'
                   : 'क्या आप $recyclerName को यह लॉट सौंपने का अनुरोध भेजना चाहते हैं?',
-              style: const TextStyle(fontSize: 15),
+              style: const TextStyle(fontSize: 15, color: AppColors.dark700),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF5EF),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.saffron50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.saffron200),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     '${l10n.proposedRate}:',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.dark700,
+                    ),
                   ),
                   Text(
                     '₹${effectiveOffer.toStringAsFixed(0)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF176B45),
+                      color: AppColors.greenPrimary,
                       fontSize: 16,
                     ),
                   ),
@@ -761,7 +797,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               l10n.cancel,
-              style: const TextStyle(color: Colors.grey),
+              style: const TextStyle(color: AppColors.dark500),
             ),
           ),
           ElevatedButton(
@@ -790,7 +826,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                         ? 'रीसायकलरकडे विनंती पाठवली आहे!'
                         : 'रीसाइक्लर को अनुरोध भेज दिया गया है!',
                   ),
-                  backgroundColor: const Color(0xFF176B45),
+                  backgroundColor: AppColors.greenPrimary,
                 ),
               );
               Navigator.pushReplacementNamed(
@@ -800,10 +836,10 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF176B45),
+              backgroundColor: AppColors.saffronPrimary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
             child: Text(l10n.confirm),
@@ -818,7 +854,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
     final selected = state.selectedRecycler;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -833,7 +869,7 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
         top: false,
         child: SizedBox(
           width: double.infinity,
-          height: 48,
+          height: 52,
           child: ElevatedButton(
             onPressed: selected == null
                 ? null
@@ -856,11 +892,14 @@ class _NearbyRecyclersViewState extends State<_NearbyRecyclersView> {
                     _showConfirmationDialog(context, selected, state.lotId);
                   },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF176B45),
+              backgroundColor: AppColors.saffronPrimary,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: Colors.grey.shade300,
+              disabledBackgroundColor: const Color(0xFFE5E7EB),
+              disabledForegroundColor: const Color(0xFF9CA3AF),
+              elevation: 1,
+              shadowColor: AppColors.saffronPrimary.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
             child: Text(

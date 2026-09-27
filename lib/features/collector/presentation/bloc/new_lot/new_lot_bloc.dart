@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/network/api_exception.dart';
+import '../../../../../data/models/ml_price_model.dart';
 import '../../../../../domain/entities/lot_entity.dart';
+import '../../../../../domain/entities/ml_price_entity.dart';
 import '../../../../../domain/usecases/collector/classify_scrap_image_usecase.dart';
 import '../../../../../domain/usecases/collector/create_collector_lot_usecase.dart';
 import '../../../../../domain/usecases/collector/estimate_price_usecase.dart';
@@ -60,6 +62,7 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
           status: NewLotStatus.classified,
           classification: classification,
           category: classification.category,
+          isManualCategory: false,
           errorType: NewLotErrorType.none,
           clearErrorMessage: true,
         ),
@@ -107,13 +110,118 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
     }
   }
 
+  static MLPriceEntity getStandardPriceEstimate({
+    required String category,
+    required double weightKg,
+    required int quantity,
+  }) {
+    final cat = category.trim().toLowerCase();
+    double rate = 50.0;
+    String unit = 'per_kg';
+
+    if (cat.contains('crt')) {
+      rate = 150.0;
+      unit = 'Piece';
+    } else if (cat.contains('e-waste') ||
+        cat.contains('pcb') ||
+        cat.contains('ewaste') ||
+        cat.contains('ई-वेस्ट')) {
+      rate = 210.0;
+      unit = 'per_kg';
+    } else if (cat.contains('motor')) {
+      rate = 180.0;
+      unit = 'per_kg';
+    } else if (cat.contains('cable') ||
+        cat.contains('wire') ||
+        cat.contains('copper') ||
+        cat.contains('केबल')) {
+      rate = 140.0;
+      unit = 'per_kg';
+    } else if (cat.contains('metal') ||
+        cat.contains('iron') ||
+        cat.contains('लोहा') ||
+        cat.contains('धातु')) {
+      rate = 140.0;
+      unit = 'per_kg';
+    } else if (cat.contains('lcd') || cat.contains('led')) {
+      rate = 120.0;
+      unit = 'per_kg';
+    } else if (cat.contains('battery') ||
+        cat.contains('बैटरी') ||
+        cat.contains('बॅटरी')) {
+      rate = 85.0;
+      unit = 'per_kg';
+    } else if (cat.contains('plastic') || cat.contains('प्लास्टिक')) {
+      rate = 25.0;
+      unit = 'per_kg';
+    } else if (cat.contains('paper') ||
+        cat.contains('cardboard') ||
+        cat.contains('कागज') ||
+        cat.contains('कागद')) {
+      rate = 15.0;
+      unit = 'per_kg';
+    } else {
+      rate = 50.0;
+      unit = 'per_kg';
+    }
+
+    final isPiece = unit.toLowerCase().contains('piece') || cat.contains('crt');
+    final multiplier = isPiece
+        ? (quantity > 0 ? quantity.toDouble() : 1.0)
+        : (weightKg > 0 ? weightKg : 1.0);
+    final estValue = rate * multiplier;
+
+    return MLPriceModel(
+      category: category,
+      recommendedRateInr: rate,
+      unit: unit,
+      estimatedValueInr: estValue,
+      estimatedValueMinInr: estValue * 0.9,
+      estimatedValueMaxInr: estValue * 1.1,
+      matchLevel: 'standard_rates',
+    );
+  }
+
   Future<void> _onCategoryChanged(
     NewLotCategoryChanged event,
     Emitter<NewLotState> emit,
   ) async {
+    if (event.category == null) {
+      // User tapped the already selected category again -> Deselect!
+      emit(
+        state.copyWith(
+          status: NewLotStatus.initial,
+          clearCategory: true,
+          clearClassification: true,
+          clearPriceEstimate: true,
+          isManualCategory: false,
+          errorType: NewLotErrorType.none,
+          clearErrorMessage: true,
+        ),
+      );
+      return;
+    }
+
+    final isPiece = (event.category ?? '').toLowerCase().contains('crt');
+    final qty = isPiece
+        ? (state.quantity >= 1 ? state.quantity : 1)
+        : state.quantity;
+    final wt = isPiece ? qty.toDouble() : state.weightKg;
+
+    final initialEstimate = getStandardPriceEstimate(
+      category: event.category!,
+      weightKg: wt,
+      quantity: qty,
+    );
+
     emit(
       state.copyWith(
+        status: NewLotStatus.priced,
         category: event.category,
+        isManualCategory: event.isManual,
+        quantity: qty,
+        weightKg: wt,
+        priceEstimate: initialEstimate,
         errorType: NewLotErrorType.none,
         clearErrorMessage: true,
       ),
@@ -125,11 +233,12 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
         event.city!.isNotEmpty) {
       await _runPriceEstimation(
         emit: emit,
-        category: event.category,
+        category: event.category!,
         stateName: event.state!,
         cityName: event.city!,
-        weightKg: state.weightKg,
-        quantity: state.quantity,
+        weightKg: wt,
+        quantity: qty,
+        fallbackToStandard: true,
       );
     }
   }
@@ -138,16 +247,45 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
     NewLotWeightQuantityChanged event,
     Emitter<NewLotState> emit,
   ) async {
+    MLPriceEntity? recalculatedPrice = state.priceEstimate;
+    final cat = state.category;
+    if (recalculatedPrice != null && recalculatedPrice.recommendedRateInr > 0) {
+      final isPiece =
+          (cat ?? '').toLowerCase().contains('crt') ||
+          recalculatedPrice.unit.toLowerCase().contains('piece');
+      final multiplier = isPiece ? event.quantity.toDouble() : event.weightKg;
+      final newValue = recalculatedPrice.recommendedRateInr * multiplier;
+      final ratio = recalculatedPrice.estimatedValueInr > 0
+          ? newValue / recalculatedPrice.estimatedValueInr
+          : 1.0;
+      recalculatedPrice = MLPriceModel(
+        category: recalculatedPrice.category,
+        recommendedRateInr: recalculatedPrice.recommendedRateInr,
+        unit: recalculatedPrice.unit,
+        estimatedValueInr: newValue,
+        estimatedValueMinInr: recalculatedPrice.estimatedValueMinInr * ratio,
+        estimatedValueMaxInr: recalculatedPrice.estimatedValueMaxInr * ratio,
+        matchLevel: recalculatedPrice.matchLevel,
+      );
+    } else if (cat != null && cat.isNotEmpty) {
+      recalculatedPrice = getStandardPriceEstimate(
+        category: cat,
+        weightKg: event.weightKg,
+        quantity: event.quantity,
+      );
+    }
+
     emit(
       state.copyWith(
         weightKg: event.weightKg,
         quantity: event.quantity,
+        priceEstimate: recalculatedPrice,
+        status: recalculatedPrice != null ? NewLotStatus.priced : state.status,
         errorType: NewLotErrorType.none,
         clearErrorMessage: true,
       ),
     );
 
-    final cat = state.category;
     if (cat != null &&
         cat.isNotEmpty &&
         event.state != null &&
@@ -162,6 +300,7 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
         weightKg: event.weightKg,
         quantity: event.quantity,
         debounce: true,
+        fallbackToStandard: true,
       );
     }
   }
@@ -200,6 +339,7 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
     required double weightKg,
     required int quantity,
     bool debounce = false,
+    bool fallbackToStandard = false,
   }) async {
     final currentRequestId = ++_pricingRequestId;
 
@@ -241,22 +381,58 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
       );
     } on ApiException catch (e) {
       if (currentRequestId != _pricingRequestId) return;
-      emit(
-        state.copyWith(
-          status: NewLotStatus.failure,
-          errorType: NewLotErrorType.pricing,
-          errorMessage: e.message,
-        ),
-      );
+      if (fallbackToStandard || state.priceEstimate != null) {
+        final fallback =
+            state.priceEstimate ??
+            getStandardPriceEstimate(
+              category: category,
+              weightKg: weightKg,
+              quantity: quantity,
+            );
+        emit(
+          state.copyWith(
+            status: NewLotStatus.priced,
+            priceEstimate: fallback,
+            errorType: NewLotErrorType.none,
+            clearErrorMessage: true,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: NewLotStatus.failure,
+            errorType: NewLotErrorType.pricing,
+            errorMessage: e.message,
+          ),
+        );
+      }
     } catch (e) {
       if (currentRequestId != _pricingRequestId) return;
-      emit(
-        state.copyWith(
-          status: NewLotStatus.failure,
-          errorType: NewLotErrorType.pricing,
-          errorMessage: 'Price estimation failed: ${e.toString()}',
-        ),
-      );
+      if (fallbackToStandard || state.priceEstimate != null) {
+        final fallback =
+            state.priceEstimate ??
+            getStandardPriceEstimate(
+              category: category,
+              weightKg: weightKg,
+              quantity: quantity,
+            );
+        emit(
+          state.copyWith(
+            status: NewLotStatus.priced,
+            priceEstimate: fallback,
+            errorType: NewLotErrorType.none,
+            clearErrorMessage: true,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: NewLotStatus.failure,
+            errorType: NewLotErrorType.pricing,
+            errorMessage: 'Price estimation failed: ${e.toString()}',
+          ),
+        );
+      }
     }
   }
 
@@ -268,18 +444,33 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
       return;
     }
 
-    if (state.imagePath == null || state.imagePath!.isEmpty) {
+    if (state.category == null || state.category!.isEmpty) {
       emit(
         state.copyWith(
           status: NewLotStatus.failure,
           errorType: NewLotErrorType.submission,
-          errorMessage: 'Please select an image for the lot',
+          errorMessage: 'Please select a category for the lot',
         ),
       );
       return;
     }
 
-    if (state.weightKg < 0.1) {
+    final cat = (state.category ?? '').toLowerCase();
+    final unit = (state.priceEstimate?.unit ?? '').toLowerCase();
+    final isPiece = cat.contains('crt') || unit.contains('piece');
+
+    if (isPiece) {
+      if (state.quantity < 1) {
+        emit(
+          state.copyWith(
+            status: NewLotStatus.failure,
+            errorType: NewLotErrorType.submission,
+            errorMessage: 'Quantity must be at least 1',
+          ),
+        );
+        return;
+      }
+    } else if (state.weightKg < 0.1) {
       emit(
         state.copyWith(
           status: NewLotStatus.failure,
@@ -299,8 +490,13 @@ class NewLotBloc extends Bloc<NewLotEvent, NewLotState> {
     );
 
     try {
+      final imagePaths =
+          (state.imagePath != null && state.imagePath!.isNotEmpty)
+          ? [state.imagePath!]
+          : const <String>[];
+
       final params = CreateLotParams(
-        imagePaths: [state.imagePath!],
+        imagePaths: imagePaths,
         estimatedWeight: state.weightKg,
         location: event.location,
         estimatedPrice: state.priceEstimate?.estimatedValueInr,
